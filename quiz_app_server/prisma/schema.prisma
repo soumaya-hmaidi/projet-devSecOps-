@@ -1,0 +1,128 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = "mysql://root@localhost:3306/quiz_app"
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  name      String
+  role      Role     @default(STUDENT)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relationships
+  createdQuizzes Quiz[]
+  attempts       QuizAttempt[]
+
+  @@map("users")
+}
+
+model Quiz {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdById Int
+
+  // Relationships
+  createdBy User         @relation(fields: [createdById], references: [id])
+  questions Question[]
+  attempts  QuizAttempt[]
+
+  @@index([createdById], map: "quizzes_createdById_fkey")
+  @@map("quizzes")
+}
+
+model Question {
+  id        Int          @id @default(autoincrement())
+  quizId    Int
+  question  String
+  type      QuestionType @default(MULTIPLE_CHOICE)
+  points    Int          @default(1)
+  order     Int
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  // Relationships
+  quiz    Quiz     @relation(fields: [quizId], references: [id])
+  options Option[]
+  answers Answer[]
+
+  @@index([quizId], map: "questions_quizId_fkey")
+  @@map("questions")
+}
+
+model Option {
+  id         Int      @id @default(autoincrement())
+  questionId Int
+  text       String
+  isCorrect  Boolean  @default(false)
+  order      Int
+  createdAt  DateTime @default(now())
+
+  // Relationships
+  question Question @relation(fields: [questionId], references: [id])
+  answers  Answer[]
+
+  @@index([questionId], map: "options_questionId_fkey")
+  @@map("options")
+}
+
+model QuizAttempt {
+  id          Int       @id @default(autoincrement())
+  quizId      Int
+  userId      Int
+  score       Int?
+  completed   Boolean   @default(false)
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+
+  // Relationships
+  quiz    Quiz     @relation(fields: [quizId], references: [id])
+  user    User     @relation(fields: [userId], references: [id])
+  answers Answer[]
+
+  @@unique([quizId, userId])
+  @@index([userId], map: "quiz_attempts_userId_fkey")
+  @@map("quiz_attempts")
+}
+
+model Answer {
+  id         Int      @id @default(autoincrement())
+  attemptId  Int
+  questionId Int
+  optionId   Int?
+  textAnswer String?
+  isCorrect  Boolean?
+  createdAt  DateTime @default(now())
+
+  // Relationships
+  attempt  QuizAttempt @relation(fields: [attemptId], references: [id])
+  question Question    @relation(fields: [questionId], references: [id])
+  option   Option?     @relation(fields: [optionId], references: [id])
+
+  @@unique([attemptId, questionId], map: "attemptId_questionId")
+  @@index([attemptId], map: "answers_attemptId_fkey")
+  @@index([optionId], map: "answers_optionId_fkey")
+  @@index([questionId], map: "answers_questionId_fkey")
+  @@map("answers")
+}
+
+enum Role {
+  ADMIN
+  STUDENT
+}
+
+enum QuestionType {
+  MULTIPLE_CHOICE
+  TRUE_FALSE
+  TEXT
+}
