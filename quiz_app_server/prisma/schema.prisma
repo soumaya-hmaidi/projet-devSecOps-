@@ -4,7 +4,7 @@ generator client {
 
 datasource db {
   provider = "mysql"
-  url      = "mysql://root@localhost:3306/quiz_app"
+  url      = env("DATABASE_URL")
 }
 
 model User {
