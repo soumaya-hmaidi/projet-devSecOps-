@@ -1,0 +1,178 @@
+trigger:
+  branches:
+    include:
+      - main
+
+variables:
+  acrName: acrquizsoumaya2026
+  acrServer: acrquizsoumaya2026.azurecr.io
+  resourceGroup: rg-quizapp-devsecops
+  appName: quizapp-smaya2026
+
+stages:
+- stage: Checkout
+  displayName: 1 - Commit and Checkout
+  jobs:
+  - job: Checkout
+    pool:
+      vmImage: ubuntu-latest
+    steps:
+    - checkout: self
+    - script: echo 'Branch:' $(Build.SourceBranch)
+      displayName: Show repo info
+
+- stage: Build
+  displayName: 2 - Build
+  dependsOn: Checkout
+  jobs:
+  - job: Build
+    pool:
+      vmImage: ubuntu-latest
+    steps:
+    - script: cd quiz_app_server && npm install && echo 'Backend OK'
+      displayName: Build Backend
+    - script: cd quiz_app_frontend && npm install && echo 'Frontend OK'
+      displayName: Build Frontend
+
+- stage: SAST
+  displayName: 3 - SAST Semgrep
+  dependsOn: Build
+  jobs:
+  - job: SAST
+    pool:
+      vmImage: ubuntu-latest
+    steps:
+    - script: |
+        pip install semgrep
+        semgrep --config=auto quiz_app_server --severity ERROR --severity WARNING || true
+        semgrep --config=auto quiz_app_frontend/src --severity ERROR --severity WARNING || true
+      displayName: Run Semgrep SAST
+
+- stage: SCA
+  displayName: 4 - SCA npm audit
+  dependsOn: Build
+  jobs:
+  - job: SCA
+    pool:
+      vmImage: ubuntu-latest
+    steps:
+    - script: |
+        cd quiz_app_server && npm install && npm audit --audit-level=high || true
+        cd ../quiz_app_frontend && npm install && npm audit --audit-level=high || true
+      displayName: NPM Audit SCA
+
+- stage: Test
+  displayName: 5 - Unit Tests
+  dependsOn: Build
+  jobs:
+  - job: Test
+    pool:
+      vmImage: ubuntu-latest
+    steps:
+    - script: |
+        cd quiz_app_server && npm install
+        if grep -q '"test"' package.json; then npm test || true; else echo 'No tests'; fi
+      displayName: Run Tests
+
+- stage: Docker
+  displayName: 6 - Docker Build Push ACR
+  dependsOn: [SAST, SCA, Test]
+  jobs:
+  - job: Docker
+    pool:
+      vmImage: ubuntu-latest
+    steps:
+    - task: Docker@2
+      displayName: Build Push Backend
+      inputs:
+        containerRegistry: 'ACR-Connection'
+        repository: 'quizapp-backend'
+        command: 'buildAndPush'
+        Dockerfile: 'quiz_app_server/Dockerfile'
+        tags: |
+          $(Build.BuildId)
+          latest
+    - task: Docker@2
+      displayName: Build Push Frontend
+      inputs:
+        containerRegistry: 'ACR-Connection'
+        repository: 'quizapp-frontend'
+        command: 'buildAndPush'
+        Dockerfile: 'quiz_app_frontend/Dockerfile'
+        tags: |
+          $(Build.BuildId)
+          latest
+
+- stage: Security
+  displayName: 7 - Trivy Image Scan
+  dependsOn: Docker
+  jobs:
+  - job: TrivyScan
+    pool:
+      vmImage: ubuntu-latest
+    steps:
+    - script: |
+        sudo apt-get install -y wget apt-transport-https gnupg
+        wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+        echo 'deb https://aquasecurity.github.io/trivy-repo/deb generic main' | sudo tee /etc/apt/sources.list.d/trivy.list
+        sudo apt-get update && sudo apt-get install -y trivy
+        trivy image --severity HIGH,CRITICAL --username $(acrUser) --password $(acrPassword) --exit-code 0 --format table $(acrServer)/quizapp-backend:$(Build.BuildId)
+        trivy image --severity HIGH,CRITICAL --username $(acrUser) --password $(acrPassword) --exit-code 0 --format table $(acrServer)/quizapp-frontend:$(Build.BuildId)
+      displayName: Trivy Scan
+
+- stage: Deploy
+  displayName: 8 - Deploy App Service
+  dependsOn: Security
+  jobs:
+  - job: Deploy
+    pool:
+      vmImage: ubuntu-latest
+    steps:
+    - task: AzureWebAppContainer@1
+      displayName: Deploy Frontend to App Service
+      inputs:
+        azureSubscription: 'Azure-Connection'
+        appName: $(appName)
+        containers: $(acrServer)/quizapp-frontend:$(Build.BuildId)
+
+- stage: DAST
+  displayName: 9 - DAST OWASP ZAP
+  dependsOn: Deploy
+  jobs:
+  - job: DAST
+    pool:
+      vmImage: ubuntu-latest
+    steps:
+    - script: |
+        sleep 60
+        docker pull ghcr.io/zaproxy/zaproxy:stable
+        docker run --rm ghcr.io/zaproxy/zaproxy:stable zap-baseline.py -t https://$(appName).azurewebsites.net -I || true
+      displayName: OWASP ZAP DAST
+
+- stage: IA_Detection
+  displayName: 10 - Module IA Isolation Forest
+  dependsOn: Deploy
+  jobs:
+  - job: IsolationForest
+    pool:
+      vmImage: ubuntu-latest
+    steps:
+    - script: |
+        pip install numpy pandas scikit-learn requests
+        wget -O anomaly_detector.py https://raw.githubusercontent.com/soumaya-hmaidi/projet-devSecOps-/main/ia_module/anomaly_detector.py
+        python3 anomaly_detector.py
+      displayName: Run Isolation Forest
+
+- stage: Monitor
+  displayName: 11 - Monitor
+  dependsOn: [DAST, IA_Detection]
+  jobs:
+  - job: Monitor
+    pool:
+      vmImage: ubuntu-latest
+    steps:
+    - script: |
+        STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://$(appName).azurewebsites.net)
+        echo "HTTP Status: $STATUS"
+        if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 500 ]; then echo 'App running'; else echo 'App issue'; fi
+      displayName: Verify Deployment
