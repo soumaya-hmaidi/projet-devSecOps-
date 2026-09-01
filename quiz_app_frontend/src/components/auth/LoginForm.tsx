@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { BookOpen, Eye, EyeOff, Mail, Lock, Sparkles } from 'lucide-react';
+import { Network, Eye, EyeOff, Mail, Lock, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { loginSchema, type LoginFormData } from '@/lib/validations';
 import { useAuth } from '@/hooks/useAuth';
@@ -58,7 +58,7 @@ export function LoginForm() {
       <CardHeader className="text-center space-y-4 p-8">
         <div className="flex justify-center">
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary text-primary-foreground bounce-gentle">
-            <BookOpen className="h-8 w-8" />
+            <Network className="h-8 w-8" />
           </div>
         </div>
         
@@ -68,10 +68,10 @@ export function LoginForm() {
             Welcome Back!
           </Badge>
           <CardTitle className="text-2xl font-bold text-gradient">
-            Sign In to QuizKids
+            Sign In to CCNA Quiz
           </CardTitle>
           <CardDescription className="text-base">
-            Continue your learning adventure
+            Continue your CCNA preparation
           </CardDescription>
         </div>
       </CardHeader>

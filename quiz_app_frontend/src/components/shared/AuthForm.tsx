@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { BookOpen, Eye, EyeOff, Mail, Lock, User, Sparkles, GraduationCap } from 'lucide-react';
+import { Network, Eye, EyeOff, Mail, Lock, User, Sparkles, GraduationCap } from 'lucide-react';
 import Link from 'next/link';
 
 interface AuthFormProps {
@@ -22,7 +22,7 @@ export function AuthForm({ type, onSubmit }: AuthFormProps) {
     email: '',
     password: '',
     confirmPassword: '',
-    role: 'STUDENT' as 'STUDENT' | 'ADMIN'
+    role: 'STUDENT' as const
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -45,7 +45,7 @@ export function AuthForm({ type, onSubmit }: AuthFormProps) {
       <CardHeader className="text-center space-y-4 p-8">
         <div className="flex justify-center">
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary text-primary-foreground bounce-gentle">
-            {isLogin ? <BookOpen className="h-8 w-8" /> : <GraduationCap className="h-8 w-8" />}
+            {isLogin ? <Network className="h-8 w-8" /> : <GraduationCap className="h-8 w-8" />}
           </div>
         </div>
         
@@ -55,7 +55,7 @@ export function AuthForm({ type, onSubmit }: AuthFormProps) {
             {isLogin ? 'Welcome Back!' : 'Join the Adventure!'}
           </Badge>
           <CardTitle className="text-2xl font-bold text-gradient">
-            {isLogin ? 'Sign In to QuizKids' : 'Create Your Account'}
+            {isLogin ? 'Sign In to CCNA Quiz' : 'Create Your Account'}
           </CardTitle>
           <CardDescription className="text-base">
             {isLogin ? 'Continue your learning adventure' : 'Start your learning journey today'}
@@ -107,34 +107,6 @@ export function AuthForm({ type, onSubmit }: AuthFormProps) {
             </div>
           </div>
 
-          {/* Role Selection - Only for Register */}
-          {!isLogin && (
-            <div className="space-y-2">
-              <Label htmlFor="role" className="text-sm font-medium">
-                I am a...
-              </Label>
-              <div className="grid grid-cols-2 gap-4">
-                <Button
-                  type="button"
-                  variant={formData.role === 'STUDENT' ? 'default' : 'outline'}
-                  className="h-12"
-                  onClick={() => setFormData(prev => ({ ...prev, role: 'STUDENT' }))}
-                >
-                  <BookOpen className="h-4 w-4 mr-2" />
-                  Student
-                </Button>
-                <Button
-                  type="button"
-                  variant={formData.role === 'ADMIN' ? 'default' : 'outline'}
-                  className="h-12"
-                  onClick={() => setFormData(prev => ({ ...prev, role: 'ADMIN' }))}
-                >
-                  <GraduationCap className="h-4 w-4 mr-2" />
-                  Teacher
-                </Button>
-              </div>
-            </div>
-          )}
 
           {/* Password Field */}
           <div className="space-y-2">

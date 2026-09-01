@@ -50,7 +50,7 @@ export function AuthLayout({ children, onLogin, onRegister }: AuthLayoutProps) {
                 <p className="text-sm text-muted-foreground">
                   {onLogin ? 
                     'By signing in, you agree to our Terms of Service and Privacy Policy.' :
-                    'Join thousands of children who are already learning and having fun with QuizKids!'
+                    'Join ESPRIT students preparing for the Cisco CCNA certification.'
                   }
                 </p>
               </div>

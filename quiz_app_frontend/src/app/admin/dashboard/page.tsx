@@ -5,14 +5,15 @@ import { AdminDashboardSkeleton } from '@/components/admin/AdminDashboardSkeleto
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useStats } from '@/hooks/useStats';
-import { 
-  BookOpen, 
-  Users, 
-  BarChart3, 
+import {
+  BookOpen,
+  Users,
+  BarChart3,
   Plus,
   TrendingUp,
   Clock
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 interface Quiz {
   id: string;
@@ -29,6 +30,7 @@ interface User {
 }
 
 export default function AdminDashboard() {
+  const router = useRouter();
   const { dashboardStats, isLoadingDashboard, dashboardError } = useStats();
 
   if (isLoadingDashboard) {
@@ -74,7 +76,7 @@ export default function AdminDashboard() {
             <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
             <p className="text-gray-600">Welcome back! Here&apos;s what&apos;s happening with your quizzes.</p>
           </div>
-          <Button className="bg-purple-600 hover:bg-purple-700">
+          <Button className="bg-purple-600 hover:bg-purple-700" onClick={() => router.push('/admin/quizzes/create')}>
             <Plus className="h-4 w-4 mr-2" />
             Create Quiz
           </Button>
@@ -152,7 +154,7 @@ export default function AdminDashboard() {
                   </div>
                 ))}
               </div>
-              <Button variant="outline" className="w-full mt-4">
+              <Button variant="outline" className="w-full mt-4" onClick={() => router.push('/admin/quizzes')}>
                 View All Quizzes
               </Button>
             </CardContent>
@@ -187,7 +189,7 @@ export default function AdminDashboard() {
                   </div>
                 ))}
               </div>
-              <Button variant="outline" className="w-full mt-4">
+              <Button variant="outline" className="w-full mt-4" onClick={() => router.push('/admin/users')}>
                 View All Users
               </Button>
             </CardContent>
@@ -204,15 +206,15 @@ export default function AdminDashboard() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Button className="h-20 flex flex-col items-center justify-center space-y-2 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700">
+              <Button className="h-20 flex flex-col items-center justify-center space-y-2 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700" onClick={() => router.push('/admin/quizzes/create')}>
                 <Plus className="h-6 w-6" />
                 <span>Create New Quiz</span>
               </Button>
-              <Button variant="outline" className="h-20 flex flex-col items-center justify-center space-y-2">
+              <Button variant="outline" className="h-20 flex flex-col items-center justify-center space-y-2" onClick={() => router.push('/admin/users')}>
                 <Users className="h-6 w-6" />
                 <span>Manage Users</span>
               </Button>
-              <Button variant="outline" className="h-20 flex flex-col items-center justify-center space-y-2">
+              <Button variant="outline" className="h-20 flex flex-col items-center justify-center space-y-2" onClick={() => router.push('/admin/analytics')}>
                 <BarChart3 className="h-6 w-6" />
                 <span>View Analytics</span>
               </Button>

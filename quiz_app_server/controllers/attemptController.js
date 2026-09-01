@@ -1,13 +1,10 @@
-const { PrismaClient } = require('@prisma/client');
-const { 
-  AppError, 
-  NotFoundError, 
+const prisma = require('../lib/prisma');
+const {
+  NotFoundError,
   AuthorizationError,
   ConflictError,
-  asyncHandler 
+  asyncHandler
 } = require('../middleware/errorHandler');
-
-const prisma = new PrismaClient();
 
 // Start quiz attempt
 const startAttempt = asyncHandler(async (req, res) => {
@@ -65,15 +62,6 @@ const submitAnswer = asyncHandler(async (req, res) => {
   const questionIdInt = parseInt(questionId, 10);
   const optionIdInt = optionId ? parseInt(optionId, 10) : null;
 
-  // Debug logging
-  console.log('SubmitAnswer Debug:', {
-    attemptId: attemptIdInt,
-    questionId: questionIdInt,
-    optionId: optionIdInt,
-    textAnswer,
-    body: req.body
-  });
-
   // Verify attempt belongs to user
   const attempt = await prisma.quizAttempt.findUnique({
     where: { id: attemptIdInt },
@@ -114,28 +102,6 @@ const submitAnswer = asyncHandler(async (req, res) => {
     correctOptionId = correctOption?.id;
     isCorrect = optionIdInt === correctOptionId;
   }
-
-  // Debug the data being sent to Prisma
-  console.log('Prisma Upsert Data:', {
-    where: {
-      attemptId_questionId: {
-        attemptId: attemptIdInt,
-        questionId: questionIdInt
-      }
-    },
-    update: {
-      optionId: optionIdInt,
-      textAnswer,
-      isCorrect
-    },
-    create: {
-      attemptId: attemptIdInt,
-      questionId: questionIdInt,
-      optionId: optionIdInt,
-      textAnswer,
-      isCorrect
-    }
-  });
 
   // Create or update answer
   const answer = await prisma.answer.upsert({

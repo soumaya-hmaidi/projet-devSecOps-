@@ -3,7 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { BookOpen, Trophy, Star, User } from 'lucide-react';
+import { Network, Trophy, Star, User } from 'lucide-react';
 import { RoleBasedNav } from './RoleBasedNav';
 import Link from 'next/link';
 
@@ -26,11 +26,11 @@ export function Header({ user, onLogin, onRegister, onLogout }: HeaderProps) {
         <div className="flex items-center space-x-2">
           <div className="flex items-center space-x-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
-              <BookOpen className="h-5 w-5" />
+              <Network className="h-5 w-5" />
             </div>
             <div className="flex flex-col">
-              <h1 className="text-xl font-bold text-gradient">QuizKids</h1>
-              <p className="text-xs text-muted-foreground">Learn & Play</p>
+              <h1 className="text-xl font-bold text-gradient">CCNA Quiz</h1>
+              <p className="text-xs text-muted-foreground">ESPRIT University</p>
             </div>
           </div>
         </div>

@@ -64,7 +64,7 @@ export function RoleBasedNav() {
               </Link>
             </Button>
             <Button variant="ghost" size="sm" asChild>
-              <Link href="/admin/students">
+              <Link href="/admin/users">
                 <Users className="h-4 w-4 mr-1" />
                 Students
               </Link>

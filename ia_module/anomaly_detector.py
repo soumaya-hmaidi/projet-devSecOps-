@@ -1,11 +1,11 @@
+import os, json, datetime, hashlib, hmac, base64, random
 import numpy as np
-import random
+import requests
 from sklearn.ensemble import IsolationForest
 from sklearn.preprocessing import StandardScaler
-import json, datetime, requests, hashlib, hmac, base64
 
-WORKSPACE_ID = 'd744608e-3e9e-4ef3-aa8f-6dcce97aeac1'
-WORKSPACE_KEY = 'C6f8v3lvfKkrhIyJZNYN1D9qO+tQGnBQ7R+muQceAk2+560UiEEimjTJonwgjinDUPvR7YVpUXhzmlMdXuwbgA=='
+WORKSPACE_ID = os.environ.get('AZURE_MONITOR_WORKSPACE_ID', '44fb9e1f-1c87-448a-8f2a-51c291c0f293')
+WORKSPACE_KEY = os.environ.get('AZURE_MONITOR_WORKSPACE_KEY', '')
 
 X = np.array([[random.randint(10,100), random.randint(0,3), random.randint(0,2), random.randint(8,22), random.uniform(0.1,5)] for _ in range(200)] + [[random.randint(250,500), 0, 0, 12, 1] for _ in range(20)] + [[80, random.randint(15,50), 0, 10, 0.5] for _ in range(20)] + [[50, 0, random.randint(8,20), 14, random.uniform(15,50)] for _ in range(20)])
 

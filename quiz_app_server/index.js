@@ -2,8 +2,23 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const morgan = require('morgan');
-const { PrismaClient } = require('@prisma/client');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
+const client = require('prom-client');
+
+const register = new client.Registry();
+client.collectDefaultMetrics({ register });
+const httpRequestCounter = new client.Counter({
+  name: 'http_requests_total',
+  help: 'Total number of HTTP requests',
+  labelNames: ['method', 'route', 'status'],
+  registers: [register],
+});
+const httpRequestDuration = new client.Histogram({
+  name: 'http_request_duration_seconds',
+  help: 'Duration of HTTP requests in seconds',
+  labelNames: ['method', 'route', 'status'],
+  registers: [register],
+});
 
 // Load environment variables
 // En production (Azure), les variables viennent des App Settings : on ne charge AUCUN fichier .env,
@@ -21,14 +36,29 @@ console.log('JWT_SECRET:', process.env.JWT_SECRET ? '✅ Set' : '❌ Missing');
 console.log('PORT:', process.env.PORT ? '✅ Set' : '❌ Missing');
 
 const app = express();
-const prisma = new PrismaClient();
 
 // Middleware
-app.use(cors());
+const allowedOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(',')
+  : ['https://quizapp-soumaya.azurewebsites.net'];
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true
+}));
 app.use(express.json());
 
 // HTTP request logging with Morgan
 app.use(morgan('dev'));
+
+// Prometheus metrics middleware
+app.use((req, res, next) => {
+  const end = httpRequestDuration.startTimer();
+  res.on('finish', () => {
+    httpRequestCounter.inc({ method: req.method, route: req.path, status: res.statusCode });
+    end({ method: req.method, route: req.path, status: res.statusCode });
+  });
+  next();
+});
 
 // Root route (evite les erreurs "Route / not found" lors des health checks Azure)
 app.get('/', (req, res) => {
@@ -56,6 +86,12 @@ app.get('/api/health', (req, res) => {
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development',
   });
+});
+
+// Prometheus metrics endpoint
+app.get('/metrics', async (req, res) => {
+  res.set('Content-Type', register.contentType);
+  res.end(await register.metrics());
 });
 
 // Handle 404 routes

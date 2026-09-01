@@ -158,10 +158,13 @@ stages:
       vmImage: ubuntu-latest
     steps:
     - script: |
-        pip install numpy pandas scikit-learn requests
-        wget -O anomaly_detector.py https://raw.githubusercontent.com/soumaya-hmaidi/projet-devSecOps-/main/ia_module/anomaly_detector.py
+        pip install numpy scikit-learn requests
+        cd ia_module
         python3 anomaly_detector.py
       displayName: Run Isolation Forest
+      env:
+        AZURE_MONITOR_WORKSPACE_ID: $(azureMonitorWorkspaceId)
+        AZURE_MONITOR_WORKSPACE_KEY: $(azureMonitorWorkspaceKey)
 
 - stage: Monitor
   displayName: 11 - Monitor

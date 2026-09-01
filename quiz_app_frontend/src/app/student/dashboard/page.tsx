@@ -5,16 +5,15 @@ import { useAttempt } from '@/hooks/useAttempt';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { 
-  BookOpen, 
-  Trophy, 
-  Clock, 
-  TrendingUp, 
+import {
+  BookOpen,
+  Trophy,
+  Clock,
+  TrendingUp,
   Play,
   BarChart3,
   Calendar
 } from 'lucide-react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 export default function StudentDashboard() {
@@ -39,7 +38,7 @@ export default function StudentDashboard() {
   }
 
   const completedAttempts = attempts?.filter(attempt => attempt.completed) || [];
-  const averageScore = completedAttempts.length > 0 
+  const averageScore = completedAttempts.length > 0
     ? Math.round(completedAttempts.reduce((sum, attempt) => sum + (attempt.score || 0), 0) / completedAttempts.length)
     : 0;
 
@@ -48,19 +47,24 @@ export default function StudentDashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-yellow-50">
       <div className="container mx-auto px-4 py-8">
+
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-gradient mb-2">
             Welcome back, {user.name}!
           </h1>
           <p className="text-muted-foreground text-lg">
-            Ready to test your knowledge? Choose a quiz and start learning!
+            Ready to practice for your CCNA certification? Choose a quiz and start learning!
           </p>
         </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-0">
+          {/* Quizzes Taken — cliquable → liste des quiz */}
+          <Card
+            className="bg-white/80 backdrop-blur-sm shadow-lg border-0 cursor-pointer hover:shadow-xl transition-shadow"
+            onClick={() => router.push('/quiz')}
+          >
             <CardContent className="p-6">
               <div className="flex items-center space-x-4">
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
@@ -74,7 +78,11 @@ export default function StudentDashboard() {
             </CardContent>
           </Card>
 
-          <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-0">
+          {/* Average Score */}
+          <Card
+            className="bg-white/80 backdrop-blur-sm shadow-lg border-0 cursor-pointer hover:shadow-xl transition-shadow"
+            onClick={() => router.push('/student/progress')}
+          >
             <CardContent className="p-6">
               <div className="flex items-center space-x-4">
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
@@ -88,7 +96,11 @@ export default function StudentDashboard() {
             </CardContent>
           </Card>
 
-          <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-0">
+          {/* Best Score */}
+          <Card
+            className="bg-white/80 backdrop-blur-sm shadow-lg border-0 cursor-pointer hover:shadow-xl transition-shadow"
+            onClick={() => router.push('/student/progress')}
+          >
             <CardContent className="p-6">
               <div className="flex items-center space-x-4">
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-purple-100">
@@ -97,7 +109,7 @@ export default function StudentDashboard() {
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Best Score</p>
                   <p className="text-2xl font-bold">
-                    {completedAttempts.length > 0 
+                    {completedAttempts.length > 0
                       ? Math.max(...completedAttempts.map(a => a.score || 0))
                       : 0}%
                   </p>
@@ -106,6 +118,7 @@ export default function StudentDashboard() {
             </CardContent>
           </Card>
 
+          {/* Time Spent */}
           <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-0">
             <CardContent className="p-6">
               <div className="flex items-center space-x-4">
@@ -125,6 +138,8 @@ export default function StudentDashboard() {
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+
+          {/* Browse Quizzes */}
           <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-0">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
@@ -136,15 +151,17 @@ export default function StudentDashboard() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button asChild className="w-full bg-primary hover:bg-primary/90">
-                <Link href="/quiz">
-                  <BookOpen className="h-4 w-4 mr-2" />
-                  Browse Quizzes
-                </Link>
+              <Button
+                className="w-full bg-primary hover:bg-primary/90"
+                onClick={() => router.push('/quiz')}
+              >
+                <BookOpen className="h-4 w-4 mr-2" />
+                Browse Quizzes
               </Button>
             </CardContent>
           </Card>
 
+          {/* View Progress */}
           <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-0">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
@@ -156,11 +173,13 @@ export default function StudentDashboard() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button asChild variant="outline" className="w-full">
-                <Link href="/student/progress">
-                  <BarChart3 className="h-4 w-4 mr-2" />
-                  View Progress
-                </Link>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => router.push('/student/progress')}
+              >
+                <BarChart3 className="h-4 w-4 mr-2" />
+                View Progress
               </Button>
             </CardContent>
           </Card>
@@ -194,28 +213,39 @@ export default function StudentDashboard() {
                     <div className="flex items-center space-x-2">
                       {attempt.completed ? (
                         <>
-                          <Badge 
+                          <Badge
                             variant={attempt.score && attempt.score >= 80 ? "default" : "secondary"}
                             className={
-                              attempt.score && attempt.score >= 80 
-                                ? "bg-green-100 text-green-800" 
+                              attempt.score && attempt.score >= 80
+                                ? "bg-green-100 text-green-800"
                                 : attempt.score && attempt.score >= 60
-                                ? "bg-yellow-100 text-yellow-800"
-                                : "bg-red-100 text-red-800"
+                                  ? "bg-yellow-100 text-yellow-800"
+                                  : "bg-red-100 text-red-800"
                             }
                           >
                             {attempt.score}%
                           </Badge>
-                          <Button asChild size="sm" variant="outline">
-                            <Link href={`/quiz/${attempt.quizId}/results`}>
-                              View Results
-                            </Link>
+                          {/* ✅ CORRIGÉ : route /quiz/[id] au lieu de /quiz/[id]/results */}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => router.push(`/quiz/${attempt.quizId}`)}
+                          >
+                            View Results
                           </Button>
                         </>
                       ) : (
-                        <Badge variant="secondary">
-                          In Progress
-                        </Badge>
+                        <>
+                          <Badge variant="secondary">In Progress</Badge>
+                          {/* Reprendre un quiz en cours */}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => router.push(`/quiz/${attempt.quizId}`)}
+                          >
+                            Continue
+                          </Button>
+                        </>
                       )}
                     </div>
                   </div>
@@ -224,6 +254,7 @@ export default function StudentDashboard() {
             </CardContent>
           </Card>
         )}
+
       </div>
     </div>
   );

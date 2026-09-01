@@ -9,20 +9,20 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "QuizKids - Fun Learning Platform for Children",
-  description: "Make learning an adventure! Create engaging quizzes, challenge friends, and discover new knowledge in the most fun way possible.",
-  keywords: ["quiz", "learning", "children", "education", "games", "kids"],
-  authors: [{ name: "QuizKids Team" }],
+  title: "CCNA Quiz - Cisco Networking Practice Platform | ESPRIT",
+  description: "Prepare for your Cisco CCNA certification with interactive quizzes covering networking fundamentals, routing, switching, security, and more.",
+  keywords: ["CCNA", "Cisco", "networking", "quiz", "certification", "ESPRIT", "routing", "switching"],
+  authors: [{ name: "ESPRIT University" }],
   openGraph: {
-    title: "QuizKids - Fun Learning Platform for Children",
-    description: "Make learning an adventure! Create engaging quizzes, challenge friends, and discover new knowledge in the most fun way possible.",
+    title: "CCNA Quiz - Cisco Networking Practice Platform | ESPRIT",
+    description: "Prepare for your Cisco CCNA certification with interactive quizzes covering networking fundamentals, routing, switching, security, and more.",
     type: "website",
     locale: "en_US",
   },
   twitter: {
     card: "summary_large_image",
-    title: "QuizKids - Fun Learning Platform for Children",
-    description: "Make learning an adventure! Create engaging quizzes, challenge friends, and discover new knowledge in the most fun way possible.",
+    title: "CCNA Quiz - Cisco Networking Practice Platform | ESPRIT",
+    description: "Prepare for your Cisco CCNA certification with interactive quizzes covering networking fundamentals, routing, switching, security, and more.",
   },
 };
 

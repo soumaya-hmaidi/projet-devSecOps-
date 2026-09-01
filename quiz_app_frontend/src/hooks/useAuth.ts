@@ -16,10 +16,25 @@ export function useAuth() {
       return res.data.data?.user || null;
     }),
     retry: false,
-    enabled: typeof window !== 'undefined' && !!localStorage.getItem('token'), // Only run on client side and if token exists
+    // Only run on client side and if token exists
+    enabled: typeof window !== 'undefined' && !!localStorage.getItem('token'),
   });
 
-  // Login mutation
+  // ── Helpers ─────────────────────────────────────────────────────────────
+  /**
+   * Redirige vers la bonne page selon le rôle de l'utilisateur.
+   * ADMIN  → /admin/dashboard
+   * STUDENT (ou autre) → /dashboard
+   */
+  const redirectAfterAuth = (userRole: string) => {
+    if (userRole === 'ADMIN') {
+      router.replace('/admin/dashboard');
+    } else {
+      router.replace('/dashboard');
+    }
+  };
+
+  // ── Login ────────────────────────────────────────────────────────────────
   const loginMutation = useMutation({
     mutationFn: authAPI.login,
     onSuccess: (response) => {
@@ -29,8 +44,8 @@ export function useAuth() {
         localStorage.setItem('token', data.token);
         queryClient.setQueryData(['auth', 'user'], data.user);
         toast.success('Login successful!');
-        // Use replace instead of push to prevent back button issues
-        router.replace('/dashboard');
+        // Redirect based on role
+        redirectAfterAuth(data.user.role);
       } else {
         console.error('Invalid response structure:', response.data);
         toast.error('Invalid response from server');
@@ -38,14 +53,15 @@ export function useAuth() {
     },
     onError: (error: unknown) => {
       console.error('Login error:', error);
-      const errorMessage = error instanceof Error && 'response' in error 
-        ? (error as any).response?.data?.message || 'Login failed'
-        : 'Login failed';
+      const errorMessage =
+        error instanceof Error && 'response' in error
+          ? (error as any).response?.data?.message || 'Login failed'
+          : 'Login failed';
       toast.error(errorMessage);
     },
   });
 
-  // Register mutation
+  // ── Register ─────────────────────────────────────────────────────────────
   const registerMutation = useMutation({
     mutationFn: authAPI.register,
     onSuccess: (response) => {
@@ -55,7 +71,8 @@ export function useAuth() {
         localStorage.setItem('token', data.token);
         queryClient.setQueryData(['auth', 'user'], data.user);
         toast.success('Registration successful!');
-        router.replace('/dashboard');
+        // Redirect based on role
+        redirectAfterAuth(data.user.role);
       } else {
         console.error('Invalid response structure:', response.data);
         toast.error('Invalid response from server');
@@ -63,14 +80,15 @@ export function useAuth() {
     },
     onError: (error: unknown) => {
       console.error('Register error:', error);
-      const errorMessage = error instanceof Error && 'response' in error 
-        ? (error as any).response?.data?.message || 'Registration failed'
-        : 'Registration failed';
+      const errorMessage =
+        error instanceof Error && 'response' in error
+          ? (error as any).response?.data?.message || 'Registration failed'
+          : 'Registration failed';
       toast.error(errorMessage);
     },
   });
 
-  // Logout mutation
+  // ── Logout ───────────────────────────────────────────────────────────────
   const logoutMutation = useMutation({
     mutationFn: authAPI.logout,
     onSuccess: () => {
@@ -87,11 +105,17 @@ export function useAuth() {
     },
   });
 
+  // ── Public API ────────────────────────────────────────────────────────────
   const login = (data: { email: string; password: string }) => {
     loginMutation.mutate(data);
   };
 
-  const register = (data: { name: string; email: string; password: string; role: 'STUDENT' | 'ADMIN' }) => {
+  const register = (data: {
+    name: string;
+    email: string;
+    password: string;
+    role: 'STUDENT' | 'ADMIN';
+  }) => {
     registerMutation.mutate(data);
   };
 

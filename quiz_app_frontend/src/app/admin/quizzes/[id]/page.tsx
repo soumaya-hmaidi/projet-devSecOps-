@@ -58,12 +58,11 @@ export default function AdminQuizDetailsPage() {
 
   return (
     <AdminLayout>
-      <QuizDetails 
-        quiz={quiz.data}
+      <QuizDetails
+        quiz={quiz}
         onClose={() => window.history.back()}
         onEdit={() => {
-          // Navigate to edit page or open edit modal
-          console.log('Edit quiz:', quiz.id);
+          window.location.href = `/admin/quizzes/edit/${quiz.id}`;
         }}
       />
     </AdminLayout>

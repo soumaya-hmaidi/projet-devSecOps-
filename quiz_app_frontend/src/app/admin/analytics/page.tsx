@@ -54,7 +54,8 @@ export default function AdminAnalytics() {
     averageScore: 0,
     completionRate: 0,
     topQuizzes: [],
-    scoreDistribution: []
+    scoreDistribution: [],
+    userEngagement: []
   };
 
   return (
@@ -131,7 +132,7 @@ export default function AdminAnalytics() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {analyticsData.topQuizzes.map((quiz, index) => (
+                {analyticsData.topQuizzes.map((quiz: { name: string; attempts: number; averageScore: number }, index: number) => (
                   <div key={quiz.name} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div className="flex items-center space-x-3">
                       <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
@@ -162,14 +163,14 @@ export default function AdminAnalytics() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {analyticsData.scoreDistribution.map((item) => (
+                {analyticsData.scoreDistribution.map((item: { range: string; count: number }) => (
                   <div key={item.range} className="flex items-center justify-between">
                     <span className="text-sm font-medium text-gray-700">{item.range}</span>
                     <div className="flex items-center space-x-2">
                       <div className="w-32 bg-gray-200 rounded-full h-2">
                         <div 
                           className="bg-blue-500 h-2 rounded-full" 
-                          style={{ width: `${(item.count / Math.max(...analytics.scoreDistribution.map(d => d.count))) * 100}%` }}
+                          style={{ width: `${(item.count / Math.max(...analyticsData.scoreDistribution.map((d: { count: number }) => d.count), 1)) * 100}%` }}
                         ></div>
                       </div>
                       <span className="text-sm text-gray-600 w-8">{item.count}</span>
@@ -192,7 +193,7 @@ export default function AdminAnalytics() {
           <CardContent>
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                {analytics.userEngagement.map((data) => (
+                {analyticsData.userEngagement.map((data: { month: string; users: number; attempts: number }) => (
                   <div key={data.month} className="text-center p-4 bg-gray-50 rounded-lg">
                     <h4 className="font-semibold text-gray-900">{data.month}</h4>
                     <div className="mt-2 space-y-1">
@@ -235,7 +236,7 @@ export default function AdminAnalytics() {
             <CardContent>
               <div className="text-center">
                 <div className="text-4xl font-bold text-purple-600 mb-2">
-                  {Math.round(analytics.totalUsers * 0.8)}
+                  {Math.round(analyticsData.totalUsers * 0.8)}
                 </div>
                 <p className="text-gray-600">Users active in the last 30 days</p>
               </div>

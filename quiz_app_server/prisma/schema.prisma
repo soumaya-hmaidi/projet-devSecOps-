@@ -33,7 +33,7 @@ model Quiz {
   createdById Int
 
   // Relationships
-  createdBy User         @relation(fields: [createdById], references: [id])
+  createdBy User          @relation(fields: [createdById], references: [id])
   questions Question[]
   attempts  QuizAttempt[]
 
@@ -90,7 +90,9 @@ model QuizAttempt {
   user    User     @relation(fields: [userId], references: [id])
   answers Answer[]
 
-  @@unique([quizId, userId])
+  // ✅ CORRIGÉ : @@unique([quizId, userId]) SUPPRIMÉ
+  // → un utilisateur peut désormais passer le même quiz plusieurs fois
+  @@index([quizId], map: "quiz_attempts_quizId_fkey")
   @@index([userId], map: "quiz_attempts_userId_fkey")
   @@map("quiz_attempts")
 }
@@ -109,6 +111,8 @@ model Answer {
   question Question    @relation(fields: [questionId], references: [id])
   option   Option?     @relation(fields: [optionId], references: [id])
 
+  // Cette contrainte-ci est CORRECTE et on la garde :
+  // une seule réponse par question au sein d'une même tentative
   @@unique([attemptId, questionId], map: "attemptId_questionId")
   @@index([attemptId], map: "answers_attemptId_fkey")
   @@index([optionId], map: "answers_optionId_fkey")
@@ -118,6 +122,7 @@ model Answer {
 
 enum Role {
   ADMIN
+  TEACHER   // ✅ AJOUTÉ
   STUDENT
 }
 

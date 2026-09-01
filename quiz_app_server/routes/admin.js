@@ -1,18 +1,26 @@
 const express = require('express');
 const { authenticateToken, requireRole } = require('../middleware/auth');
-const { 
+const {
   getAllQuizzesForAdmin,
   getQuizById,
   createQuiz,
   updateQuiz,
-  deleteQuiz
+  deleteQuiz,
+  publishQuiz,
+  unpublishQuiz
 } = require('../controllers/quizController');
-const { 
+const {
   getDashboardStats,
   getQuizStats,
   getUserStats,
   getAnalytics
 } = require('../controllers/statsController');
+const {
+  getAllUsers,
+  getUserById,
+  updateUser,
+  deleteUser
+} = require('../controllers/userController');
 
 const router = express.Router();
 
@@ -25,7 +33,15 @@ router.get('/quizzes', getAllQuizzesForAdmin);
 router.get('/quizzes/:id', getQuizById);
 router.post('/quizzes', createQuiz);
 router.put('/quizzes/:id', updateQuiz);
+router.post('/quizzes/:id/publish', publishQuiz);
+router.post('/quizzes/:id/unpublish', unpublishQuiz);
 router.delete('/quizzes/:id', deleteQuiz);
+
+// User Management Routes
+router.get('/users', getAllUsers);
+router.get('/users/:id', getUserById);
+router.put('/users/:id', updateUser);
+router.delete('/users/:id', deleteUser);
 
 // Dashboard Routes
 router.get('/dashboard/stats', getDashboardStats);

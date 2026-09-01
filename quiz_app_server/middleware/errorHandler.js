@@ -119,17 +119,6 @@ const errorHandler = (err, req, res, next) => {
     error = handleValidationError(err);
   }
 
-  // Handle duplicate key errors
-  if (err.code === 11000) {
-    const field = Object.keys(err.keyValue)[0];
-    error = new ConflictError(`${field} already exists`);
-  }
-
-  // Handle cast errors (invalid ObjectId)
-  if (err.name === 'CastError') {
-    error = new ValidationError('Invalid ID format');
-  }
-
   // Default to 500 server error
   if (!error.statusCode) {
     error.statusCode = 500;

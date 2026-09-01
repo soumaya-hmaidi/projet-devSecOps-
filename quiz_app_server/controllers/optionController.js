@@ -1,8 +1,5 @@
-const { PrismaClient } = require('@prisma/client');
-const { asyncHandler } = require('../middleware/errorHandler');
-const { NotFoundError, AuthorizationError } = require('../middleware/errorHandler');
-
-const prisma = new PrismaClient();
+const prisma = require('../lib/prisma');
+const { asyncHandler, NotFoundError, AuthorizationError } = require('../middleware/errorHandler');
 
 // Get option by ID
 const getOptionById = asyncHandler(async (req, res) => {

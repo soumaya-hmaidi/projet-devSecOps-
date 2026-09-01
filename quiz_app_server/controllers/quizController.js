@@ -1,12 +1,9 @@
-const { PrismaClient } = require('@prisma/client');
-const { 
-  AppError, 
-  NotFoundError, 
+const prisma = require('../lib/prisma');
+const {
+  NotFoundError,
   AuthorizationError,
-  asyncHandler 
+  asyncHandler
 } = require('../middleware/errorHandler');
-
-const prisma = new PrismaClient();
 
 // Get all quizzes (for students)
 const getAllQuizzes = asyncHandler(async (req, res) => {
@@ -54,7 +51,7 @@ const getQuizById = asyncHandler(async (req, res) => {
     throw new NotFoundError('Quiz not found');
   }
 
-  if (!quiz.isActive) {
+  if (!quiz.isActive && req.user.role !== 'ADMIN') {
     throw new AuthorizationError('Quiz is not active');
   }
 
@@ -121,18 +118,55 @@ const updateQuiz = asyncHandler(async (req, res) => {
   });
 });
 
+// Publish quiz (Admin only)
+const publishQuiz = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const quizId = parseInt(id, 10);
+
+  const quiz = await prisma.quiz.update({
+    where: { id: quizId },
+    data: { isActive: true }
+  });
+
+  res.json({
+    success: true,
+    message: 'Quiz published successfully',
+    data: quiz
+  });
+});
+
+// Unpublish quiz (Admin only)
+const unpublishQuiz = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const quizId = parseInt(id, 10);
+
+  const quiz = await prisma.quiz.update({
+    where: { id: quizId },
+    data: { isActive: false }
+  });
+
+  res.json({
+    success: true,
+    message: 'Quiz unpublished successfully',
+    data: quiz
+  });
+});
+
 // Delete quiz (Admin only)
 const deleteQuiz = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const quizId = parseInt(id, 10);
 
-  await prisma.quiz.delete({
-    where: { id: quizId }
-  });
+  // Cascade: delete answers, attempts, options, questions, then quiz
+  await prisma.answer.deleteMany({ where: { question: { quizId } } });
+  await prisma.quizAttempt.deleteMany({ where: { quizId } });
+  await prisma.option.deleteMany({ where: { question: { quizId } } });
+  await prisma.question.deleteMany({ where: { quizId } });
+  await prisma.quiz.delete({ where: { id: quizId } });
 
-  res.json({ 
+  res.json({
     success: true,
-    message: 'Quiz deleted successfully' 
+    message: 'Quiz deleted successfully'
   });
 });
 
@@ -166,5 +200,7 @@ module.exports = {
   createQuiz,
   updateQuiz,
   deleteQuiz,
+  publishQuiz,
+  unpublishQuiz,
   getAllQuizzesForAdmin
 };

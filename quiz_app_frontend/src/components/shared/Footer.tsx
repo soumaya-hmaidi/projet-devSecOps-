@@ -1,4 +1,4 @@
-import { BookOpen, Heart, Mail, Phone } from 'lucide-react';
+import { Network, GraduationCap, Mail, Phone } from 'lucide-react';
 
 export function Footer() {
   return (
@@ -9,15 +9,15 @@ export function Footer() {
           <div className="space-y-4">
             <div className="flex items-center space-x-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                <BookOpen className="h-5 w-5" />
+                <Network className="h-5 w-5" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-gradient">QuizKids</h3>
-                <p className="text-sm text-muted-foreground">Learn & Play</p>
+                <h3 className="text-lg font-bold text-gradient">CCNA Quiz</h3>
+                <p className="text-sm text-muted-foreground">ESPRIT University</p>
               </div>
             </div>
             <p className="text-sm text-muted-foreground">
-              Making learning fun and interactive for children through engaging quizzes and games.
+              Interactive Cisco CCNA certification preparation platform for networking students at ESPRIT.
             </p>
           </div>
 
@@ -26,66 +26,58 @@ export function Footer() {
             <h4 className="text-sm font-semibold">Quick Links</h4>
             <ul className="space-y-2 text-sm">
               <li>
-                <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
-                  How it Works
-                </a>
-              </li>
-              <li>
-                <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
+                <a href="#features" className="text-muted-foreground hover:text-primary transition-colors">
                   Features
                 </a>
               </li>
               <li>
-                <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
-                  Pricing
+                <a href="#how-it-works" className="text-muted-foreground hover:text-primary transition-colors">
+                  How it Works
                 </a>
               </li>
               <li>
-                <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
-                  Support
+                <a href="/login" className="text-muted-foreground hover:text-primary transition-colors">
+                  Sign In
+                </a>
+              </li>
+              <li>
+                <a href="/register" className="text-muted-foreground hover:text-primary transition-colors">
+                  Register
                 </a>
               </li>
             </ul>
           </div>
 
-          {/* Resources */}
+          {/* CCNA Topics */}
           <div className="space-y-4">
-            <h4 className="text-sm font-semibold">Resources</h4>
+            <h4 className="text-sm font-semibold">CCNA Topics</h4>
             <ul className="space-y-2 text-sm">
               <li>
-                <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
-                  Teacher Guide
-                </a>
+                <span className="text-muted-foreground">Network Fundamentals</span>
               </li>
               <li>
-                <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
-                  Student Guide
-                </a>
+                <span className="text-muted-foreground">Routing & Switching</span>
               </li>
               <li>
-                <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
-                  FAQ
-                </a>
+                <span className="text-muted-foreground">IP Connectivity</span>
               </li>
               <li>
-                <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
-                  Blog
-                </a>
+                <span className="text-muted-foreground">Security Fundamentals</span>
               </li>
             </ul>
           </div>
 
           {/* Contact */}
           <div className="space-y-4">
-            <h4 className="text-sm font-semibold">Contact Us</h4>
+            <h4 className="text-sm font-semibold">Contact</h4>
             <div className="space-y-2 text-sm">
               <div className="flex items-center space-x-2">
                 <Mail className="h-4 w-4 text-muted-foreground" />
-                <span className="text-muted-foreground">hello@quizkids.com</span>
+                <span className="text-muted-foreground">contact@esprit.tn</span>
               </div>
               <div className="flex items-center space-x-2">
                 <Phone className="h-4 w-4 text-muted-foreground" />
-                <span className="text-muted-foreground">+1 (555) 123-4567</span>
+                <span className="text-muted-foreground">+216 70 685 685</span>
               </div>
             </div>
           </div>
@@ -93,12 +85,11 @@ export function Footer() {
 
         <div className="mt-8 pt-8 border-t flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0">
           <p className="text-sm text-muted-foreground">
-            © 2024 QuizKids. All rights reserved.
+            © 2025 CCNA Quiz - ESPRIT University. All rights reserved.
           </p>
           <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-            <span>Made with</span>
-            <Heart className="h-4 w-4 text-red-500" />
-            <span>for children</span>
+            <GraduationCap className="h-4 w-4" />
+            <span>ESPRIT - School of Engineering</span>
           </div>
         </div>
       </div>

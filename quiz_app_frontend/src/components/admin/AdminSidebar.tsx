@@ -101,7 +101,7 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
                 <BookOpen className="h-5 w-5 text-purple-800" />
               </div>
               <div>
-                <h2 className="text-xl font-bold">Quiz Admin</h2>
+                <h2 className="text-xl font-bold">CCNA Admin</h2>
                 <p className="text-sm text-purple-200">Management Panel</p>
               </div>
             </div>
