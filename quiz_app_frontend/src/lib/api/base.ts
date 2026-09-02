@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Create axios instance with base configuration
 export const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'https://quizapp-backend-soumaya.azurewebsites.net/api',
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'https://quizapp-backend-smaya2026.azurewebsites.net/api',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',

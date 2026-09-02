@@ -6,7 +6,7 @@ scrape_configs:
   - job_name: 'quizapp-backend'
     scheme: https
     static_configs:
-      - targets: ['quizapp-smaya2026.azurewebsites.net']
+      - targets: ['quizapp-backend-smaya2026.azurewebsites.net']
     metrics_path: /metrics
     tls_config:
       insecure_skip_verify: false

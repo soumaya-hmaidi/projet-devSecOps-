@@ -40,7 +40,7 @@ const app = express();
 // Middleware
 const allowedOrigins = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(',')
-  : ['https://quizapp-soumaya.azurewebsites.net'];
+  : ['https://quizapp-smaya2026.azurewebsites.net', 'https://quizapp-backend-smaya2026.azurewebsites.net'];
 app.use(cors({
   origin: allowedOrigins,
   credentials: true

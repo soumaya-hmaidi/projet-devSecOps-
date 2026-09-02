@@ -1,7 +1,7 @@
 // Environment configuration
 export const config = {
   // API Configuration
-  apiUrl: process.env.NEXT_PUBLIC_API_URL || 'https://quizapp-backend-soumaya.azurewebsites.net/api',
+  apiUrl: process.env.NEXT_PUBLIC_API_URL || 'https://quizapp-backend-smaya2026.azurewebsites.net/api',
   appEnv: process.env.NEXT_PUBLIC_APP_ENV || 'development',
   
   // Development Configuration
