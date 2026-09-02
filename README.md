@@ -30,6 +30,8 @@ QuizApp est une plateforme de quiz en ligne déployée sur **Microsoft Azure** a
 
 ## Architecture Azure
 
+![Architecture Cloud Azure](Infrastructure.jpeg)
+
 ```
 rg-quizapp-devsecops
 ├── App Service — quizapp-smaya2026          (Frontend Next.js · image v3)
