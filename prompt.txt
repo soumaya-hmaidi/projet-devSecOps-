@@ -1,0 +1,52 @@
+Create a professional cloud architecture diagram for a DevSecOps project on Microsoft Azure.
+Use a clean, modern flat design with Azure's official color scheme (blue tones #0078D4),
+white background, clear labels in French, and connector arrows showing data flow.
+
+The diagram must include these components organized in logical groups:
+
+--- TOP: CI/CD PIPELINE (horizontal flow, left to right) ---
+GitHub repository → Azure DevOps Pipeline with 11 labeled stages:
+[Checkout] → [Build] → [SAST Semgrep] → [SCA npm audit] → [Unit Tests]
+→ [Docker Build+Push] → [Trivy Scan] → [Deploy] → [DAST OWASP ZAP]
+→ [IA Isolation Forest] → [Monitor]
+
+--- CENTER: Azure Resource Group "rg-quizapp-devsecops" (blue bordered box) ---
+Inside the resource group, show these services with Azure icons:
+
+Left column — Application tier:
+• App Service "quizapp-smaya2026" → label: Frontend Next.js (image v3)
+• App Service "quizapp-backend-smaya2026" → label: API Express + Prisma (image v4)
+• PostgreSQL Flexible Server "pg-quizapp-smaya26" → label: Base de données
+
+Center column — Registry & Security:
+• Azure Container Registry "acrquizsoumaya2026" → label: Images Docker
+• Azure Key Vault "kv-quizapp-smaya26" → label: Secrets JWT · DB · ACR
+• Managed Identity → label: System-assigned (arrow to Key Vault)
+
+Right column — Monitoring & IA:
+• App Service "prometheus-smaya2026" → label: Prometheus (scrape /metrics)
+• App Service "grafana-smaya2026" → label: Grafana (16 panels)
+• Log Analytics Workspace "law-quizapp-monitor" → label: Azure Monitor
+
+--- ARROWS showing data flows ---
+• Frontend ←→ Backend API (double arrow, label: REST API calls)
+• Backend → PostgreSQL (label: Prisma ORM)
+• Backend → Prometheus (label: /metrics scrape every 15s)
+• Prometheus → Grafana (label: datasource)
+• IA module → Log Analytics (label: QuizAppAnomalies_CL · degree · type)
+• Key Vault → Backend (label: Managed Identity injection)
+• ACR → App Services (label: Docker pull)
+• Pipeline → ACR (label: docker push)
+• Pipeline → App Services (label: AzureWebAppContainer deploy)
+
+--- BOTTOM: Legend box ---
+Show a small legend: App Service (blue) · Database (orange) · Security (gold) · Monitoring (green) · CI/CD (purple)
+
+Style: technical architecture diagram, professional, suitable for a university thesis (PFE),
+isometric or 2D flat layout, no shadows, crisp icons, readable font size 12pt minimum.
+
+---
+STYLE VARIANTS (choose one):
+- Isometric 3D  : add "isometric 3D perspective, light blue grid floor"
+- Dark mode     : add "dark background #1E1E2E, neon accent colors, cyberpunk DevSecOps aesthetic"
+- Minimal       : add "minimal flat icons, lots of white space, Notion-style diagram"
