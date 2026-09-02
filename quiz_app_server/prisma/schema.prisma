@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -16,7 +16,6 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Relationships
   createdQuizzes Quiz[]
   attempts       QuizAttempt[]
 
@@ -32,12 +31,11 @@ model Quiz {
   updatedAt   DateTime @updatedAt
   createdById Int
 
-  // Relationships
   createdBy User          @relation(fields: [createdById], references: [id])
   questions Question[]
   attempts  QuizAttempt[]
 
-  @@index([createdById], map: "quizzes_createdById_fkey")
+  @@index([createdById])
   @@map("quizzes")
 }
 
@@ -51,12 +49,11 @@ model Question {
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
 
-  // Relationships
   quiz    Quiz     @relation(fields: [quizId], references: [id])
   options Option[]
   answers Answer[]
 
-  @@index([quizId], map: "questions_quizId_fkey")
+  @@index([quizId])
   @@map("questions")
 }
 
@@ -68,11 +65,10 @@ model Option {
   order      Int
   createdAt  DateTime @default(now())
 
-  // Relationships
   question Question @relation(fields: [questionId], references: [id])
   answers  Answer[]
 
-  @@index([questionId], map: "options_questionId_fkey")
+  @@index([questionId])
   @@map("options")
 }
 
@@ -85,15 +81,12 @@ model QuizAttempt {
   startedAt   DateTime  @default(now())
   completedAt DateTime?
 
-  // Relationships
   quiz    Quiz     @relation(fields: [quizId], references: [id])
   user    User     @relation(fields: [userId], references: [id])
   answers Answer[]
 
-  // ✅ CORRIGÉ : @@unique([quizId, userId]) SUPPRIMÉ
-  // → un utilisateur peut désormais passer le même quiz plusieurs fois
-  @@index([quizId], map: "quiz_attempts_quizId_fkey")
-  @@index([userId], map: "quiz_attempts_userId_fkey")
+  @@index([quizId])
+  @@index([userId])
   @@map("quiz_attempts")
 }
 
@@ -106,23 +99,20 @@ model Answer {
   isCorrect  Boolean?
   createdAt  DateTime @default(now())
 
-  // Relationships
   attempt  QuizAttempt @relation(fields: [attemptId], references: [id])
   question Question    @relation(fields: [questionId], references: [id])
   option   Option?     @relation(fields: [optionId], references: [id])
 
-  // Cette contrainte-ci est CORRECTE et on la garde :
-  // une seule réponse par question au sein d'une même tentative
-  @@unique([attemptId, questionId], map: "attemptId_questionId")
-  @@index([attemptId], map: "answers_attemptId_fkey")
-  @@index([optionId], map: "answers_optionId_fkey")
-  @@index([questionId], map: "answers_questionId_fkey")
+  @@unique([attemptId, questionId])
+  @@index([attemptId])
+  @@index([optionId])
+  @@index([questionId])
   @@map("answers")
 }
 
 enum Role {
   ADMIN
-  TEACHER   // ✅ AJOUTÉ
+  TEACHER
   STUDENT
 }
 
