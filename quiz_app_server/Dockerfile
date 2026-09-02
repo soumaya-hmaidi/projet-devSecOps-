@@ -5,4 +5,4 @@ RUN npm install --production
 COPY . .
 RUN npx prisma generate
 EXPOSE 3000
-CMD ["sh", "-c", "npx prisma db push --accept-data-loss && node prisma/seed.js ; node index.js"]
+CMD ["sh", "-c", "npx prisma db push --accept-data-loss && node prisma/seed.js && node prisma/seed-ccna.js ; node index.js"]
