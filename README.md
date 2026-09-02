@@ -58,7 +58,7 @@ Checkout → Build → SAST (Semgrep) → SCA (npm audit) → Unit Tests
 | SCA | npm audit | Vulnérabilités CVE dans les dépendances |
 | Trivy | Aqua Security | Scan d'images Docker (HIGH/CRITICAL) |
 | DAST | OWASP ZAP | Test de pénétration sur l'URL de production |
-| IA | scikit-learn | Isolation Forest — détection d'anomalies comportementales |
+| IA | scikit-learn | Isolation Forest — détection et classification d'anomalies |
 
 ---
 
@@ -103,8 +103,54 @@ projet-devSecOps-/
 ├── ia_module/
 │   └── anomaly_detector.py  # Isolation Forest → Azure Monitor
 ├── azure-pipelines.yml      # Pipeline 11 stages
-├── resume.md                # Résumé complet du projet (PFE)
-└── DEPLOYMENT_GUIDE.md      # Guide de déploiement pas-à-pas
+└── README.md
+```
+
+---
+
+## Module IA — Isolation Forest
+
+`ia_module/anomaly_detector.py` détecte des comportements anormaux dans les logs applicatifs (pics de trafic, floods d'erreurs, latences excessives) et envoie les résultats à **Azure Monitor Log Analytics**.
+
+### Dataset synthétique (260 entrées)
+
+| Catégorie | Nb | Caractéristiques |
+|-----------|-----|-----------------|
+| Trafic normal | 200 | 10–100 req/min, 0–3 erreurs, latence 0.1–5 s |
+| Pic de trafic | 20 | 250–500 req/min (DDoS simulé) |
+| Flood d'erreurs | 20 | 15–50 erreurs/min |
+| Latence excessive | 20 | 15–50 s de temps de réponse |
+
+### Colonnes envoyées à `QuizAppAnomalies_CL`
+
+| Colonne | Description |
+|---------|-------------|
+| `anomalies_d` | Nombre total d'anomalies |
+| `anomaly_rate_d` | Taux d'anomalies en % |
+| `degree_s` | Sévérité : `FAIBLE` / `MODERE` / `ELEVE` / `CRITIQUE` |
+| `anomaly_type_s` | Type dominant : `Pic de trafic` / `Flood d'erreurs` / `Latence excessive` / `Erreurs 5xx` / `Multiple` |
+| `traffic_spikes_d` | Nb d'anomalies de type pic de trafic |
+| `error_floods_d` | Nb d'anomalies de type flood d'erreurs |
+| `high_latency_d` | Nb d'anomalies de type latence excessive |
+| `avg_score_d` | Score moyen d'isolation (plus négatif = plus sévère) |
+| `min_score_d` | Score le plus extrême détecté |
+
+### KQL — Consulter les résultats
+
+```kql
+QuizAppAnomalies_CL
+| project TimeGenerated, degree_s, anomaly_type_s, anomalies_d,
+          anomaly_rate_d, traffic_spikes_d, error_floods_d,
+          high_latency_d, avg_score_d
+| order by TimeGenerated desc
+```
+
+### Exécution manuelle
+
+```bash
+cd ia_module
+python anomaly_detector.py
+# La clé workspace est récupérée automatiquement via az CLI
 ```
 
 ---
