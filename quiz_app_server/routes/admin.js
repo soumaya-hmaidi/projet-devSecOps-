@@ -9,6 +9,7 @@ const {
   publishQuiz,
   unpublishQuiz
 } = require('../controllers/quizController');
+const { createQuestion } = require('../controllers/questionController');
 const {
   getDashboardStats,
   getQuizStats,
@@ -36,6 +37,10 @@ router.put('/quizzes/:id', updateQuiz);
 router.post('/quizzes/:id/publish', publishQuiz);
 router.post('/quizzes/:id/unpublish', unpublishQuiz);
 router.delete('/quizzes/:id', deleteQuiz);
+router.post('/quizzes/:id/questions', (req, res, next) => {
+  req.body.quizId = parseInt(req.params.id);
+  next();
+}, createQuestion);
 
 // User Management Routes
 router.get('/users', getAllUsers);

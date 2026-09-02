@@ -27,7 +27,10 @@ const getDashboardStats = asyncHandler(async (req, res) => {
   const recentQuizzes = await prisma.quiz.findMany({
     take: 5,
     orderBy: { createdAt: 'desc' },
-    include: { _count: { select: { attempts: true } } }
+    include: {
+      _count: { select: { attempts: true } },
+      attempts: { where: { completedAt: { not: null } }, select: { score: true } }
+    }
   });
 
   const recentUsers = await prisma.user.findMany({
@@ -59,7 +62,13 @@ const getDashboardStats = asyncHandler(async (req, res) => {
     message: 'Dashboard statistics retrieved successfully',
     data: {
       totalQuizzes, totalUsers, totalAttempts, totalQuestions, averageScore,
-      recentQuizzes: recentQuizzes.map(q => ({ id: q.id, title: q.title, attempts: q._count.attempts, createdAt: q.createdAt })),
+      recentQuizzes: recentQuizzes.map(q => {
+        const done = q.attempts.filter(a => a.score !== null);
+        const avg = done.length > 0
+          ? Math.round(done.reduce((s, a) => s + (a.score || 0), 0) / done.length)
+          : 0;
+        return { id: q.id, title: q.title, attempts: q._count.attempts, averageScore: avg, createdAt: q.createdAt };
+      }),
       recentUsers,
       topQuizzes
     }

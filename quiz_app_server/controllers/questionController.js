@@ -52,7 +52,7 @@ const createQuestion = asyncHandler(async (req, res) => {
     throw new NotFoundError('Quiz not found');
   }
 
-  if (quiz.createdById !== req.user.id) {
+  if (quiz.createdById !== req.user.id && req.user.role !== 'ADMIN') {
     throw new AuthorizationError('Unauthorized to add questions to this quiz');
   }
 

@@ -18,6 +18,37 @@ import {
 export default function AdminAnalytics() {
   const { analytics, isLoadingAnalytics, analyticsError } = useStats();
 
+  const handleExport = () => {
+    const data = analytics;
+    if (!data) return;
+    const rows = [
+      ['Metric', 'Value'],
+      ['Total Quizzes', data.totalQuizzes],
+      ['Total Users', data.totalUsers],
+      ['Total Attempts', data.totalAttempts],
+      ['Average Score (%)', data.averageScore],
+      ['Completion Rate (%)', data.completionRate],
+      [],
+      ['Top Quiz', 'Attempts', 'Avg Score (%)'],
+      ...((data.topQuizzes || []).map((q: { name: string; attempts: number; averageScore: number }) =>
+        [q.name, q.attempts, q.averageScore]
+      )),
+      [],
+      ['Score Range', 'Count'],
+      ...((data.scoreDistribution || []).map((d: { range: string; count: number }) =>
+        [d.range, d.count]
+      )),
+    ];
+    const csv = rows.map(r => r.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `quizapp-analytics-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   if (isLoadingAnalytics) {
     return (
       <AdminLayout>
@@ -67,7 +98,7 @@ export default function AdminAnalytics() {
             <h1 className="text-3xl font-bold text-gray-900">Analytics Dashboard</h1>
             <p className="text-gray-600">Insights and performance metrics for your quizzes</p>
           </div>
-          <Button variant="outline">
+          <Button variant="outline" onClick={handleExport} disabled={!analytics}>
             <Download className="h-4 w-4 mr-2" />
             Export Report
           </Button>

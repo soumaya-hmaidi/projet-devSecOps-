@@ -64,7 +64,7 @@ const getQuizById = asyncHandler(async (req, res) => {
 
 // Create quiz (Admin only)
 const createQuiz = asyncHandler(async (req, res) => {
-  const { title, description, questions } = req.body;
+  const { title, description, questions = [] } = req.body;
 
   const quiz = await prisma.quiz.create({
     data: {

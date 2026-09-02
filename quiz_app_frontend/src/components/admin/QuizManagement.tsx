@@ -18,7 +18,7 @@ import {
   ToggleRight
 } from 'lucide-react';
 import { useAdminQuizzes, usePublishQuiz, useUnpublishQuiz } from '@/hooks/useAdmin';
-import { useQuiz } from '@/hooks/useQuiz';
+import { useDeleteQuiz } from '@/hooks/useQuiz';
 import { QuizManagementSkeleton } from './QuizManagementSkeleton';
 import { Quiz } from '@/types/quiz';
 import { toast } from 'sonner';
@@ -31,7 +31,7 @@ export function QuizManagement() {
   const { data: quizzes, isLoading, error } = useAdminQuizzes();
   const publishQuiz = usePublishQuiz();
   const unpublishQuiz = useUnpublishQuiz();
-  const { deleteQuiz } = useQuiz();
+  const deleteQuizMutation = useDeleteQuiz();
 
   const handleCreateQuiz = () => {
     router.push('/admin/quizzes/create');
@@ -47,7 +47,7 @@ export function QuizManagement() {
 
   const handleDeleteQuiz = (quizId: number, quizTitle: string) => {
     if (confirm(`Are you sure you want to delete "${quizTitle}"? This action cannot be undone.`)) {
-      deleteQuiz(quizId);
+      deleteQuizMutation.mutate(quizId);
     }
   };
 
@@ -233,6 +233,7 @@ export function QuizManagement() {
                     variant="outline"
                     size="sm"
                     onClick={() => handleDeleteQuiz(quiz.id, quiz.title)}
+                    disabled={deleteQuizMutation.isPending}
                     className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
                   >
                     <Trash2 className="h-4 w-4" />

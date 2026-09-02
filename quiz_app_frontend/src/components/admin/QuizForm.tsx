@@ -28,7 +28,8 @@ import { quizSchema, type QuizFormData } from '@/lib/validations';
 import { Quiz } from '@/types/quiz';
 import { ConfirmationModal } from '@/components/shared/ConfirmationModal';
 import { useDeleteQuestion } from '@/hooks/useAdmin';
-import { useUpdateQuiz } from '@/hooks/useQuiz';
+import { useUpdateQuiz, useCreateQuiz, useAddQuestion } from '@/hooks/useQuiz';
+import { adminAPI } from '@/lib/api/admin';
 
 interface QuizFormProps {
   quiz?: Quiz | null;
@@ -36,18 +37,36 @@ interface QuizFormProps {
   onSave: () => void;
 }
 
+interface AddQuestionForm {
+  question: string;
+  type: 'MULTIPLE_CHOICE' | 'TRUE_FALSE';
+  optionA: string;
+  optionB: string;
+  optionC: string;
+  optionD: string;
+  correctOption: 'A' | 'B' | 'C' | 'D' | 'TRUE' | 'FALSE';
+}
+
 export function QuizForm({ quiz, onClose, onSave }: QuizFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [questionToDelete, setQuestionToDelete] = useState<number | null>(null);
+  const [showAddQuestion, setShowAddQuestion] = useState(false);
+  const [addQForm, setAddQForm] = useState<AddQuestionForm>({
+    question: '', type: 'MULTIPLE_CHOICE',
+    optionA: '', optionB: '', optionC: '', optionD: '', correctOption: 'A',
+  });
   const isEditing = !!quiz;
 
   // Delete question mutation
   const deleteQuestionMutation = useDeleteQuestion();
-  
   // Update quiz mutation
   const updateQuizMutation = useUpdateQuiz();
+  // Create quiz mutation
+  const createQuizMutation = useCreateQuiz();
+  // Add question mutation
+  const addQuestionMutation = useAddQuestion();
 
   const handleDeleteQuestion = (questionId: number) => {
     setQuestionToDelete(questionId);
@@ -129,27 +148,55 @@ export function QuizForm({ quiz, onClose, onSave }: QuizFormProps) {
     setIsSubmitting(true);
     try {
       if (isEditing && quiz) {
-        // Update existing quiz
         await updateQuizMutation.mutateAsync({
           id: quiz.id,
-          data: {
-            title: data.title,
-            description: data.description,
-            isActive: data.isActive
-          }
+          data: { title: data.title, description: data.description, isActive: data.isActive }
         });
       } else {
-        // TODO: Implement create quiz functionality
-        console.log('Creating new quiz:', data);
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await createQuizMutation.mutateAsync({
+          title: data.title,
+          description: data.description,
+          isActive: data.isActive,
+        } as any);
       }
-      
       onSave();
     } catch (error) {
       console.error('Error saving quiz:', error);
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleAddQuestion = async () => {
+    if (!quiz) return;
+    if (!addQForm.question.trim()) { toast.error('Question text is required'); return; }
+
+    let options: { text: string; isCorrect: boolean; order: number }[] = [];
+    if (addQForm.type === 'MULTIPLE_CHOICE') {
+      if (!addQForm.optionA || !addQForm.optionB || !addQForm.optionC || !addQForm.optionD) {
+        toast.error('All 4 options are required'); return;
+      }
+      const labels = ['A', 'B', 'C', 'D'] as const;
+      options = [addQForm.optionA, addQForm.optionB, addQForm.optionC, addQForm.optionD].map((text, i) => ({
+        text, isCorrect: labels[i] === addQForm.correctOption, order: i + 1,
+      }));
+    } else {
+      options = [
+        { text: 'True', isCorrect: addQForm.correctOption === 'TRUE', order: 1 },
+        { text: 'False', isCorrect: addQForm.correctOption === 'FALSE', order: 2 },
+      ];
+    }
+
+    addQuestionMutation.mutate(
+      { quizId: quiz.id, data: { question: addQForm.question, type: addQForm.type, points: 1, order: (quiz.questions?.length || 0) + 1, options } },
+      {
+        onSuccess: () => {
+          setShowAddQuestion(false);
+          setAddQForm({ question: '', type: 'MULTIPLE_CHOICE', optionA: '', optionB: '', optionC: '', optionD: '', correctOption: 'A' });
+          router.refresh();
+        }
+      }
+    );
   };
 
   return (
@@ -221,7 +268,7 @@ export function QuizForm({ quiz, onClose, onSave }: QuizFormProps) {
                     Questions ({quiz?.questions?.length || 0})
                   </div>
                   {isEditing && (
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" onClick={() => setShowAddQuestion(true)}>
                       <Plus className="h-4 w-4 mr-2" />
                       Add Question
                     </Button>
@@ -304,11 +351,11 @@ export function QuizForm({ quiz, onClose, onSave }: QuizFormProps) {
                           
                           {/* Question Actions */}
                           <div className="flex items-center gap-2 ml-4">
-                            <Button variant="outline" size="sm">
+                            <Button variant="outline" size="sm" onClick={() => handleEditQuestion(question.id)}>
                               <Eye className="h-4 w-4" />
                             </Button>
-                            <Button 
-                              variant="outline" 
+                            <Button
+                              variant="outline"
                               size="sm"
                               onClick={() => handleEditQuestion(question.id)}
                             >
@@ -491,6 +538,89 @@ export function QuizForm({ quiz, onClose, onSave }: QuizFormProps) {
           </div>
         </div>
       </form>
+
+      {/* Add Question Modal */}
+      {showAddQuestion && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowAddQuestion(false)}>
+          <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold">Add Question</h2>
+              <Button variant="ghost" size="sm" onClick={() => setShowAddQuestion(false)}>✕</Button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Question *</label>
+                <textarea
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+                  value={addQForm.question}
+                  onChange={e => setAddQForm(f => ({ ...f, question: e.target.value }))}
+                  placeholder="Enter question text..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                <div className="flex gap-2">
+                  {(['MULTIPLE_CHOICE', 'TRUE_FALSE'] as const).map(t => (
+                    <Button key={t} variant={addQForm.type === t ? 'default' : 'outline'} size="sm"
+                      onClick={() => setAddQForm(f => ({ ...f, type: t, correctOption: t === 'TRUE_FALSE' ? 'TRUE' : 'A' }))}>
+                      {t === 'MULTIPLE_CHOICE' ? 'Multiple Choice' : 'True / False'}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              {addQForm.type === 'MULTIPLE_CHOICE' && (
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">Options (select correct answer)</label>
+                  {(['A', 'B', 'C', 'D'] as const).map(letter => (
+                    <div key={letter} className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="correctOption"
+                        checked={addQForm.correctOption === letter}
+                        onChange={() => setAddQForm(f => ({ ...f, correctOption: letter }))}
+                        className="accent-purple-600"
+                      />
+                      <span className="text-sm font-medium text-gray-600 w-4">{letter}.</span>
+                      <Input
+                        placeholder={`Option ${letter}`}
+                        value={addQForm[`option${letter}` as keyof AddQuestionForm] as string}
+                        onChange={e => setAddQForm(f => ({ ...f, [`option${letter}`]: e.target.value }))}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {addQForm.type === 'TRUE_FALSE' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Correct Answer</label>
+                  <div className="flex gap-3">
+                    {(['TRUE', 'FALSE'] as const).map(v => (
+                      <Button key={v} variant={addQForm.correctOption === v ? 'default' : 'outline'} size="sm"
+                        onClick={() => setAddQForm(f => ({ ...f, correctOption: v }))}>
+                        {v}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex justify-end gap-2 pt-2">
+                <Button variant="outline" onClick={() => setShowAddQuestion(false)}>Cancel</Button>
+                <Button className="bg-purple-600 hover:bg-purple-700"
+                  onClick={handleAddQuestion}
+                  disabled={addQuestionMutation.isPending}>
+                  {addQuestionMutation.isPending ? 'Adding...' : 'Add Question'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Confirmation Modal */}
       <ConfirmationModal
