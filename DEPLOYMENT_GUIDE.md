@@ -110,15 +110,16 @@ $RESOURCE_GROUP    = "rg-quizapp-devsecops"
 $LOCATION          = "francecentral"
 
 # ─── ACR ─────────────────────────────────────────────────────
-$ACR_NAME          = "acrquizappsoumaya"
+$ACR_NAME          = "acrquizsoumaya2026"
 $ACR_SERVER        = "$ACR_NAME.azurecr.io"
 
 # ─── APP SERVICE ─────────────────────────────────────────────
-$APP_NAME          = "quizapp-soumaya"
-$APP_PLAN          = "asp-quizapp-free"
+$APP_NAME          = "quizapp-smaya2026"          # frontend
+$BACKEND_APP_NAME  = "quizapp-backend-smaya2026"  # backend API
+$APP_PLAN          = "asp-quizapp-b1"
 
 # ─── KEY VAULT ───────────────────────────────────────────────
-$KV_NAME           = "kv-quizapp-soumaya"
+$KV_NAME           = "kv-quizapp-smaya26"
 
 # ─── PROJECT PATHS ───────────────────────────────────────────
 $PROJECT_PATH      = "C:\Users\USER\OneDrive - ESPRIT\Bureau\DevSecOps\projet-devSecOps-"
@@ -127,10 +128,11 @@ $BACKEND_PATH      = "$PROJECT_PATH\quiz_app_server"
 $IA_PATH           = "$PROJECT_PATH\ia_module"
 
 # ─── DISPLAY ─────────────────────────────────────────────────
-Write-Host "Subscription : $SUBSCRIPTION_ID"
+Write-Host "Subscription  : $SUBSCRIPTION_ID"
 Write-Host "Resource Group: $RESOURCE_GROUP"
-Write-Host "ACR Server   : $ACR_SERVER"
-Write-Host "App URL      : https://$APP_NAME.azurewebsites.net"
+Write-Host "ACR Server    : $ACR_SERVER"
+Write-Host "Frontend URL  : https://$APP_NAME.azurewebsites.net"
+Write-Host "Backend URL   : https://$BACKEND_APP_NAME.azurewebsites.net"
 ```
 
 ---
@@ -226,9 +228,11 @@ RUN npm install --production
 COPY . .
 RUN npx prisma generate
 EXPOSE 3000
-CMD ["node", "index.js"]
+CMD ["sh", "-c", "npx prisma db push --accept-data-loss && node prisma/seed.js && node prisma/seed-ccna.js ; node index.js"]
 "@ | Out-File -FilePath "$BACKEND_PATH\Dockerfile" -Encoding utf8
 ```
+
+> Le CMD exécute automatiquement les migrations Prisma, les seeds (admin + quiz CCNA) puis démarre l'API. Les seeds sont idempotents.
 
 ### Frontend Dockerfile
 
@@ -293,7 +297,7 @@ az keyvault create `
 az keyvault secret set --vault-name $KV_NAME --name "acr-password"         --value $ACR_PASSWORD
 az keyvault secret set --vault-name $KV_NAME --name "acr-username"         --value $ACR_NAME
 az keyvault secret set --vault-name $KV_NAME --name "JWT-SECRET-KEY"       --value "your-super-secret-jwt-key-2026"
-az keyvault secret set --vault-name $KV_NAME --name "DB-CONNECTION-STRING" --value "mysql://root:Admin123!@4.176.12.177:3306/quiz_app"
+az keyvault secret set --vault-name $KV_NAME --name "DB-CONNECTION-STRING" --value "postgresql://adminuser:Password123!@pg-quizapp-smaya26.postgres.database.azure.com:5432/quizdb?sslmode=require"
 az keyvault secret set --vault-name $KV_NAME --name "subscription-id"      --value $SUBSCRIPTION_ID
 
 # Verify
@@ -315,22 +319,25 @@ subscription-id       True
 
 ## Step 8 — App Service
 
+### 8a — App Service Plan
+
 ```powershell
-# Create App Service Plan (B1 = Basic, supports Linux containers)
 az appservice plan create `
   --name $APP_PLAN `
   --resource-group $RESOURCE_GROUP `
   --is-linux `
   --sku B1
+```
 
-# Create Web App with frontend image
+### 8b — Frontend App Service
+
+```powershell
 az webapp create `
   --resource-group $RESOURCE_GROUP `
   --plan $APP_PLAN `
   --name $APP_NAME `
   --deployment-container-image-name "$ACR_SERVER/quizapp-frontend:latest"
 
-# Configure ACR credentials
 az webapp config container set `
   --name $APP_NAME `
   --resource-group $RESOURCE_GROUP `
@@ -339,55 +346,71 @@ az webapp config container set `
   --container-registry-user $ACR_NAME `
   --container-registry-password $ACR_PASSWORD
 
-# Restart app
+az webapp config appsettings set `
+  --name $APP_NAME `
+  --resource-group $RESOURCE_GROUP `
+  --settings NEXT_PUBLIC_API_URL="https://$BACKEND_APP_NAME.azurewebsites.net"
+
 az webapp restart --name $APP_NAME --resource-group $RESOURCE_GROUP
+Write-Host "Frontend URL: https://$APP_NAME.azurewebsites.net"
+```
 
-# Check state
-az webapp show --name $APP_NAME --resource-group $RESOURCE_GROUP --query state -o tsv
+### 8c — Backend App Service
 
-Write-Host "App URL: https://$APP_NAME.azurewebsites.net"
+```powershell
+az webapp create `
+  --resource-group $RESOURCE_GROUP `
+  --plan $APP_PLAN `
+  --name $BACKEND_APP_NAME `
+  --deployment-container-image-name "$ACR_SERVER/quiz-backend:latest"
+
+az webapp config container set `
+  --name $BACKEND_APP_NAME `
+  --resource-group $RESOURCE_GROUP `
+  --container-image-name "$ACR_SERVER/quiz-backend:latest" `
+  --container-registry-url "https://$ACR_SERVER" `
+  --container-registry-user $ACR_NAME `
+  --container-registry-password $ACR_PASSWORD
+
+az webapp config appsettings set `
+  --name $BACKEND_APP_NAME `
+  --resource-group $RESOURCE_GROUP `
+  --settings `
+  "DATABASE_URL=@Microsoft.KeyVault(VaultName=$KV_NAME;SecretName=DB-CONNECTION-STRING)" `
+  "JWT_SECRET=@Microsoft.KeyVault(VaultName=$KV_NAME;SecretName=JWT-SECRET-KEY)" `
+  "PORT=3000"
+
+az webapp restart --name $BACKEND_APP_NAME --resource-group $RESOURCE_GROUP
+Write-Host "Backend URL: https://$BACKEND_APP_NAME.azurewebsites.net"
 ```
 
 ---
 
 ## Step 9 — Managed Identity
 
+Apply to both App Services so each can pull from ACR and read Key Vault secrets.
+
 ```powershell
-# Enable managed identity on App Service
-$PRINCIPAL_ID = az webapp identity assign `
-  --name $APP_NAME `
-  --resource-group $RESOURCE_GROUP `
-  --query principalId -o tsv
+foreach ($webApp in @($APP_NAME, $BACKEND_APP_NAME)) {
+  $PRINCIPAL_ID = az webapp identity assign `
+    --name $webApp `
+    --resource-group $RESOURCE_GROUP `
+    --query principalId -o tsv
 
-Write-Host "Principal ID: $PRINCIPAL_ID"
+  Write-Host "$webApp Principal ID: $PRINCIPAL_ID"
 
-# Give AcrPull permission to pull images
-az role assignment create `
-  --assignee $PRINCIPAL_ID `
-  --scope "/subscriptions/$SUBSCRIPTION_ID/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.ContainerRegistry/registries/$ACR_NAME" `
-  --role AcrPull
+  az role assignment create `
+    --assignee $PRINCIPAL_ID `
+    --scope "/subscriptions/$SUBSCRIPTION_ID/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.ContainerRegistry/registries/$ACR_NAME" `
+    --role AcrPull
 
-# Enable managed identity credentials for ACR
-az resource update `
-  --ids "/subscriptions/$SUBSCRIPTION_ID/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.Web/sites/$APP_NAME" `
-  --set properties.siteConfig.acrUseManagedIdentityCreds=true
+  az keyvault set-policy `
+    --name $KV_NAME `
+    --object-id $PRINCIPAL_ID `
+    --secret-permissions get list
 
-# Give Key Vault access
-az keyvault set-policy `
-  --name $KV_NAME `
-  --object-id $PRINCIPAL_ID `
-  --secret-permissions get list
-
-# Inject Key Vault secrets into App Service
-az webapp config appsettings set `
-  --name $APP_NAME `
-  --resource-group $RESOURCE_GROUP `
-  --settings `
-  "DB_CONNECTION_STRING=@Microsoft.KeyVault(VaultName=$KV_NAME;SecretName=DB-CONNECTION-STRING)" `
-  "JWT_SECRET=@Microsoft.KeyVault(VaultName=$KV_NAME;SecretName=JWT-SECRET-KEY)"
-
-# Final restart
-az webapp restart --name $APP_NAME --resource-group $RESOURCE_GROUP
+  az webapp restart --name $webApp --resource-group $RESOURCE_GROUP
+}
 ```
 
 ---
@@ -731,14 +754,16 @@ Write-Host "==============================="
 Write-Host " VERIFICATION COMPLETE PROJECT "
 Write-Host "==============================="
 
-Write-Host "`n1. App Service State:"
-az webapp show --name $APP_NAME --resource-group $RESOURCE_GROUP --query state -o tsv
+Write-Host "`n1. Frontend App Service:"
+az webapp show --name $APP_NAME --resource-group $RESOURCE_GROUP --query "{State:state,URL:defaultHostName}" -o table
 
-Write-Host "`n2. App Service URL:"
-az webapp show --name $APP_NAME --resource-group $RESOURCE_GROUP --query defaultHostName -o tsv
+Write-Host "`n2. Backend App Service:"
+az webapp show --name $BACKEND_APP_NAME --resource-group $RESOURCE_GROUP --query "{State:state,URL:defaultHostName}" -o table
 
 Write-Host "`n3. ACR Images:"
 az acr repository list --name $ACR_NAME -o table
+az acr repository show-tags --name $ACR_NAME --repository quiz-backend -o table
+az acr repository show-tags --name $ACR_NAME --repository quizapp-frontend -o table
 
 Write-Host "`n4. Key Vault Secrets:"
 az keyvault secret list --vault-name $KV_NAME -o table
@@ -746,14 +771,12 @@ az keyvault secret list --vault-name $KV_NAME -o table
 Write-Host "`n5. All Resources:"
 az resource list --resource-group $RESOURCE_GROUP -o table
 
-Write-Host "`n6. VM Grafana IP:"
-az vm show -d --name vm-grafana-quizapp --resource-group $RESOURCE_GROUP --query publicIps -o tsv
+Write-Host "`n6. Grafana / Prometheus:"
+az webapp show --name grafana-smaya2026    --resource-group $RESOURCE_GROUP --query state -o tsv
+az webapp show --name prometheus-smaya2026 --resource-group $RESOURCE_GROUP --query state -o tsv
 
-Write-Host "`n7. Managed Identity:"
-az webapp identity show --name $APP_NAME --resource-group $RESOURCE_GROUP --query principalId -o tsv
-
-Write-Host "`n8. Run IA Module:"
-az vm run-command invoke --resource-group $RESOURCE_GROUP --name vm-grafana-quizapp --command-id RunShellScript --scripts "python3 /opt/anomaly_detector.py"
+Write-Host "`n7. Backend health check:"
+curl https://$BACKEND_APP_NAME.azurewebsites.net/health
 ```
 
 ---
@@ -761,11 +784,11 @@ az vm run-command invoke --resource-group $RESOURCE_GROUP --name vm-grafana-quiz
 ## Step 15 — Stop Resources (Save Credits)
 
 ```powershell
-# Stop App Service
-az webapp stop --name $APP_NAME --resource-group $RESOURCE_GROUP
-
-# Stop VM Grafana
-az vm deallocate --name vm-grafana-quizapp --resource-group $RESOURCE_GROUP
+# Stop App Services
+az webapp stop --name $APP_NAME         --resource-group $RESOURCE_GROUP
+az webapp stop --name $BACKEND_APP_NAME --resource-group $RESOURCE_GROUP
+az webapp stop --name grafana-smaya2026    --resource-group $RESOURCE_GROUP
+az webapp stop --name prometheus-smaya2026 --resource-group $RESOURCE_GROUP
 
 Write-Host "All resources stopped. Credits saved."
 ```
@@ -773,9 +796,10 @@ Write-Host "All resources stopped. Credits saved."
 ### Restart resources
 
 ```powershell
-az vm start --name vm-grafana-quizapp --resource-group $RESOURCE_GROUP
-az webapp start --name $APP_NAME --resource-group $RESOURCE_GROUP
-az vm show -d --name vm-grafana-quizapp --resource-group $RESOURCE_GROUP --query publicIps -o tsv
+az webapp start --name $APP_NAME         --resource-group $RESOURCE_GROUP
+az webapp start --name $BACKEND_APP_NAME --resource-group $RESOURCE_GROUP
+az webapp start --name grafana-smaya2026    --resource-group $RESOURCE_GROUP
+az webapp start --name prometheus-smaya2026 --resource-group $RESOURCE_GROUP
 ```
 
 ---
@@ -785,10 +809,11 @@ az vm show -d --name vm-grafana-quizapp --resource-group $RESOURCE_GROUP --query
 ### App Service — Image pull error
 
 ```powershell
-# Check logs
+# Check logs (frontend or backend)
 az webapp log tail --name $APP_NAME --resource-group $RESOURCE_GROUP
+az webapp log tail --name $BACKEND_APP_NAME --resource-group $RESOURCE_GROUP
 
-# Re-configure container
+# Re-configure frontend container
 az webapp config container set `
   --name $APP_NAME `
   --resource-group $RESOURCE_GROUP `
@@ -797,7 +822,17 @@ az webapp config container set `
   --container-registry-user $ACR_NAME `
   --container-registry-password $ACR_PASSWORD
 
-az webapp restart --name $APP_NAME --resource-group $RESOURCE_GROUP
+# Re-configure backend container
+az webapp config container set `
+  --name $BACKEND_APP_NAME `
+  --resource-group $RESOURCE_GROUP `
+  --container-image-name "$ACR_SERVER/quiz-backend:latest" `
+  --container-registry-url "https://$ACR_SERVER" `
+  --container-registry-user $ACR_NAME `
+  --container-registry-password $ACR_PASSWORD
+
+az webapp restart --name $APP_NAME         --resource-group $RESOURCE_GROUP
+az webapp restart --name $BACKEND_APP_NAME --resource-group $RESOURCE_GROUP
 ```
 
 ### Grafana — No data
@@ -850,12 +885,13 @@ git push origin main
 
 | Resource | URL |
 |----------|-----|
-| **Application Web** | https://quizapp-soumaya.azurewebsites.net |
-| **Azure Portal** | https://portal.azure.com |
-| **Pipeline CI/CD** | https://dev.azure.com/SoumayaHMAIDI/DevSecOps-QuizApp/_build |
-| **Azure DevOps Repos** | https://dev.azure.com/SoumayaHMAIDI/DevSecOps-QuizApp/_git/DevSecOps-QuizApp |
+| **Frontend** | https://quizapp-smaya2026.azurewebsites.net |
+| **Backend API** | https://quizapp-backend-smaya2026.azurewebsites.net |
+| **Grafana** | https://grafana-smaya2026.azurewebsites.net |
+| **Prometheus** | https://prometheus-smaya2026.azurewebsites.net |
+| **Azure Portal** | https://portal.azure.com (rg-quizapp-devsecops) |
+| **Pipeline CI/CD** | https://dev.azure.com/soumayahmaidi369/DevSecOps-QuizApp/_build |
 | **GitHub** | https://github.com/soumaya-hmaidi/projet-devSecOps- |
-| **Grafana** | http://20.199.111.194:3000 |
 | **Azure Monitor** | https://portal.azure.com → law-quizapp-monitor → Logs |
 
 ---
@@ -864,12 +900,16 @@ git push origin main
 
 | Component | Status | Details |
 |-----------|--------|---------|
-| App Service | ✅ Running | https://quizapp-soumaya.azurewebsites.net |
-| ACR | ✅ 2 images | quizapp-frontend:latest + quizapp-backend:latest |
-| Key Vault | ✅ 6 secrets | acr-password, JWT, DB, Monitor, acr-username, subscription-id |
-| Pipeline | ✅ 10 stages | Commit → Build → SAST → SCA → Test → Docker → Trivy → Deploy → DAST → IA → Monitor |
-| Grafana | ✅ Active | Prometheus + Node Exporter + Alert Rule |
-| Module IA | ✅ 260 logs | 26 anomalies detected → Azure Monitor status 200 |
+| App Service (frontend) | ✅ Running | quizapp-smaya2026 (image quizapp-frontend:v3) |
+| App Service (backend) | ✅ Running | quizapp-backend-smaya2026 (image quiz-backend:v4) |
+| PostgreSQL Flexible Server | ✅ Running | pg-quizapp-smaya26 |
+| ACR | ✅ 3 images | quiz-backend:v4 · quizapp-frontend:v3 · prometheus-custom:v2 |
+| Key Vault | ✅ 5 secrets | acr-password, JWT, DB (PostgreSQL), Monitor key, acr-username |
+| Pipeline | ✅ 11 stages | Checkout → Build → SAST → SCA → Test → Docker → Trivy → Deploy (frontend+backend) → DAST → IA → Monitor |
+| Grafana | ✅ Active | 16-panel dashboard · 6 alert rules |
+| Prometheus | ✅ Scraping | Target quizapp-backend-smaya2026 UP |
+| Module IA | ✅ 260 logs | 26 anomalies detected → Azure Monitor 200 |
+| Quiz CCNA | ✅ 45 questions | CCNA 1/2/3 chargées via seed-ccna.js |
 
 ---
 

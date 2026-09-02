@@ -8,6 +8,7 @@ variables:
   acrServer: acrquizsoumaya2026.azurecr.io
   resourceGroup: rg-quizapp-devsecops
   appName: quizapp-smaya2026
+  backendAppName: quizapp-backend-smaya2026
 
 stages:
 - stage: Checkout
@@ -134,6 +135,12 @@ stages:
         azureSubscription: 'Azure-Connection'
         appName: $(appName)
         containers: $(acrServer)/quizapp-frontend:$(Build.BuildId)
+    - task: AzureWebAppContainer@1
+      displayName: Deploy Backend to App Service
+      inputs:
+        azureSubscription: 'Azure-Connection'
+        appName: $(backendAppName)
+        containers: $(acrServer)/quiz-backend:$(Build.BuildId)
 
 - stage: DAST
   displayName: 9 - DAST OWASP ZAP
@@ -165,6 +172,8 @@ stages:
       env:
         AZURE_MONITOR_WORKSPACE_ID: $(azureMonitorWorkspaceId)
         AZURE_MONITOR_WORKSPACE_KEY: $(azureMonitorWorkspaceKey)
+        # azureMonitorWorkspaceId and azureMonitorWorkspaceKey must be defined
+        # as secret pipeline variables in Azure DevOps → Pipelines → Variables
 
 - stage: Monitor
   displayName: 11 - Monitor

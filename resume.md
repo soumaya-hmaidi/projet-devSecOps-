@@ -34,10 +34,33 @@ L'objectif principal est de montrer qu'il est possible d'industrialiser un cycle
 | Frontend | **Next.js 15** (React, TypeScript, App Router, Tailwind CSS) |
 | Backend | **Node.js 20 + Express 5** (REST API) |
 | ORM | **Prisma 6** |
-| Base de données | **MySQL** (Azure Database for MySQL) |
+| Base de données | **PostgreSQL** (Azure Database for PostgreSQL Flexible Server) |
 | Authentification | **JWT** (jsonwebtoken + bcryptjs) |
 | Containerisation | **Docker** (images Alpine-based) |
 | Registry | **Azure Container Registry** (ACR) |
+
+### Contenu applicatif — Quiz CCNA
+
+La plateforme propose **48 questions de certification CCNA** réparties en 3 quiz en français :
+
+| Quiz | Thème | Questions |
+|------|-------|-----------|
+| CCNA 1 — ITNv7 | Notions de base sur les réseaux | 15 |
+| CCNA 2 — SRWEv7 | Commutation, routage et sans fil | 15 |
+| CCNA 3 — ENSAv7 | Technologies réseau d'entreprise | 15 |
+
+Les questions sont chargées automatiquement via le script `seed-ccna.js` à chaque démarrage du conteneur backend (idempotent — ignoré si déjà chargé).
+
+### Fonctionnalités administrateur
+
+| Fonctionnalité | Description |
+|----------------|-------------|
+| Activer / désactiver un quiz | L'administrateur peut publier ou dépublier un quiz ; un quiz inactif n'est pas visible des étudiants |
+| Créer un quiz | Formulaire titre + description + statut actif |
+| Ajouter des questions | Modal inline dans le formulaire (QCM ou Vrai/Faux) |
+| Supprimer un quiz | Confirmation + appel API DELETE |
+| Exporter les analytics | Export CSV du tableau de bord analytique |
+| Gérer les utilisateurs | CRUD complet : liste, modification du rôle/email/mot de passe, suppression |
 
 ---
 
@@ -46,36 +69,35 @@ L'objectif principal est de montrer qu'il est possible d'industrialiser un cycle
 L'infrastructure est entièrement hébergée sur **Microsoft Azure** (abonnement Free Trial).
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                     Azure — rg-quizapp-devsecops               │
-│                                                                 │
-│  ┌─────────────────┐    ┌─────────────────┐                    │
-│  │  App Service    │    │  App Service    │                    │
-│  │  quizapp-smaya  │    │  grafana-smaya  │                    │
-│  │  (Frontend +    │    │  (Grafana)      │                    │
-│  │   Backend)      │    └────────┬────────┘                    │
-│  └────────┬────────┘             │                             │
-│           │ /metrics             │                             │
-│           ▼                     │                             │
-│  ┌─────────────────┐            │                             │
-│  │  App Service    │◄───────────┘                             │
-│  │  prometheus-    │   scrape                                 │
-│  │  smaya2026      │                                          │
-│  └─────────────────┘                                          │
-│                                                                 │
-│  ┌─────────────────┐    ┌─────────────────┐                    │
-│  │  Azure          │    │  Azure Key      │                    │
-│  │  Container      │    │  Vault          │                    │
-│  │  Registry       │    │  kv-quizapp-    │                    │
-│  │  acrquizsoumaya │    │  smaya26        │                    │
-│  └─────────────────┘    └─────────────────┘                    │
-│                                                                 │
-│  ┌─────────────────────────────────────────┐                   │
-│  │  Log Analytics Workspace                │                   │
-│  │  law-quizapp-monitor                    │                   │
-│  │  (Azure Monitor — QuizAppAnomalies_CL)  │                   │
-│  └─────────────────────────────────────────┘                   │
-└─────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────┐
+│                      Azure — rg-quizapp-devsecops                   │
+│                                                                      │
+│  ┌──────────────────────┐    ┌──────────────────────────┐           │
+│  │  App Service         │    │  App Service             │           │
+│  │  quizapp-smaya2026   │    │  quizapp-backend-smaya   │           │
+│  │  (Frontend Next.js)  │    │  2026 (API Express)      │           │
+│  └────────────────┬─────┘    └────────────┬─────────────┘           │
+│                   │  API calls             │ /metrics                │
+│                   └──────────┐  ┌─────────┘                         │
+│                              ▼  ▼                                    │
+│  ┌─────────────────┐    ┌─────────────────────┐                     │
+│  │  App Service    │    │  App Service        │                     │
+│  │  grafana-smaya  │◄───│  prometheus-smaya   │                     │
+│  │  2026 (Grafana) │    │  2026 (Prometheus)  │                     │
+│  └─────────────────┘    └─────────────────────┘                     │
+│                                                                      │
+│  ┌──────────────────────┐    ┌──────────────────┐                   │
+│  │  Azure Container     │    │  Azure Key Vault │                   │
+│  │  Registry            │    │  kv-quizapp-     │                   │
+│  │  acrquizsoumaya2026  │    │  smaya26         │                   │
+│  └──────────────────────┘    └──────────────────┘                   │
+│                                                                      │
+│  ┌──────────────────────┐    ┌──────────────────────────────────┐   │
+│  │  PostgreSQL Flexible │    │  Log Analytics Workspace         │   │
+│  │  pg-quizapp-smaya26  │    │  law-quizapp-monitor             │   │
+│  │  (Base de données)   │    │  (Azure Monitor — Anomalies_CL)  │   │
+│  └──────────────────────┘    └──────────────────────────────────┘   │
+└──────────────────────────────────────────────────────────────────────┘
 ```
 
 ### Ressources Azure provisionnées
@@ -84,8 +106,10 @@ L'infrastructure est entièrement hébergée sur **Microsoft Azure** (abonnement
 |-----------|-----|------|
 | Resource Group | `rg-quizapp-devsecops` | Conteneur de toutes les ressources |
 | Container Registry | `acrquizsoumaya2026` | Stockage des images Docker |
-| App Service (app) | `quizapp-smaya2026` | Hébergement frontend + backend |
-| App Service Plan | B1 Linux | Plan d'hébergement |
+| App Service (frontend) | `quizapp-smaya2026` | Hébergement Next.js (image v3) |
+| App Service (backend) | `quizapp-backend-smaya2026` | API Express + Prisma (image v4) |
+| App Service Plan | B1 Linux | Plan d'hébergement partagé |
+| PostgreSQL Flexible Server | `pg-quizapp-smaya26` | Base de données PostgreSQL |
 | Key Vault | `kv-quizapp-smaya26` | Secrets (JWT, DB, ACR credentials) |
 | App Service (monitoring) | `grafana-smaya2026` | Tableau de bord Grafana |
 | App Service (monitoring) | `prometheus-smaya2026` | Collecte de métriques |
@@ -177,7 +201,10 @@ Tous les secrets sont stockés dans **Key Vault** et injectés dans l'App Servic
 
 Deux images Docker ont été créées, buildées localement et poussées dans l'ACR :
 
-#### Backend — `quizapp-backend:latest`
+#### Backend — `quiz-backend:v4` (version actuelle)
+
+Historique des versions : v1 (base) → v2 (Prometheus metrics) → v3 (CCNA seed) → v4 (admin fixes + userController)
+
 ```dockerfile
 FROM node:20-alpine
 WORKDIR /app
@@ -186,10 +213,19 @@ RUN npm install --production
 COPY . .
 RUN npx prisma generate
 EXPOSE 3000
-CMD ["node", "index.js"]
+CMD ["sh", "-c", "npx prisma db push --accept-data-loss && node prisma/seed.js && node prisma/seed-ccna.js ; node index.js"]
 ```
 
-#### Frontend — `quizapp-frontend:latest`
+Le CMD exécute à chaque démarrage du conteneur :
+1. `prisma db push` — synchronise le schéma avec PostgreSQL
+2. `seed.js` — crée l'admin et un quiz mathématiques de démonstration (idempotent)
+3. `seed-ccna.js` — crée les 3 quiz CCNA (45 questions) si absents
+4. `node index.js` — démarre l'API Express
+
+#### Frontend — `quizapp-frontend:v3` (version actuelle)
+
+Historique des versions : v1 (base) → v2 (correction URL backend) → v3 (correctifs tableau de bord admin)
+
 ```dockerfile
 FROM node:20-alpine
 WORKDIR /app
@@ -203,7 +239,13 @@ CMD ["npm", "start"]
 
 ### ACR — Azure Container Registry
 - **Nom :** `acrquizsoumaya2026.azurecr.io`
-- **Images stockées :** `quizapp-backend:latest`, `quizapp-frontend:latest`, `prometheus-custom:latest`
+- **Images stockées :**
+
+| Image | Tags | Description |
+|-------|------|-------------|
+| `quiz-backend` | v1, v2, v3, v4, latest | API Express + Prisma + seeds |
+| `quizapp-frontend` | v1, v2, v3, latest | Next.js (standalone) |
+| `prometheus-custom` | v1, v2, latest | Prometheus configuré pour scraper le backend |
 
 ---
 
@@ -249,7 +291,7 @@ scrape_configs:
   - job_name: 'quizapp-backend'
     scheme: https
     static_configs:
-      - targets: ['quizapp-smaya2026.azurewebsites.net']
+      - targets: ['quizapp-backend-smaya2026.azurewebsites.net']
     metrics_path: /metrics
 ```
 
@@ -336,18 +378,22 @@ QuizAppAnomalies_CL
 
 | Composant | Statut | URL / Détail |
 |-----------|--------|--------------|
-| App Service (app) | ✅ Running | https://quizapp-smaya2026.azurewebsites.net |
+| App Service (frontend) | ✅ Running | https://quizapp-smaya2026.azurewebsites.net (image v3) |
+| App Service (backend) | ✅ Running | https://quizapp-backend-smaya2026.azurewebsites.net (image v4) |
 | App Service (Grafana) | ✅ Running | https://grafana-smaya2026.azurewebsites.net |
 | App Service (Prometheus) | ✅ Running | https://prometheus-smaya2026.azurewebsites.net |
-| ACR | ✅ 3 images | backend · frontend · prometheus-custom |
-| Key Vault | ✅ 5 secrets | ACR, JWT, DB, Monitor, subscription |
-| Managed Identity | ✅ Activée | System-assigned sur quizapp-smaya2026 |
+| PostgreSQL Flexible Server | ✅ Running | pg-quizapp-smaya26 (francecentral) |
+| ACR | ✅ 3 images | quiz-backend:v4 · quizapp-frontend:v3 · prometheus-custom:v2 |
+| Key Vault | ✅ 5 secrets | ACR, JWT, DB (PostgreSQL), Monitor, subscription |
+| Managed Identity | ✅ Activée | System-assigned sur les deux App Services |
 | Log Analytics | ✅ Actif | law-quizapp-monitor (francecentral) |
 | Pipeline CI/CD | ✅ 11 stages | Tous les stages complétés avec succès |
-| Prometheus target | ✅ UP | quizapp-backend scraped toutes les 15s |
+| Prometheus target | ✅ UP | quizapp-backend-smaya2026 scraped toutes les 15s |
 | Grafana datasource | ✅ OK | "Successfully queried the Prometheus API" |
 | Grafana dashboard | ✅ 16 panels | uid: quizapp-main |
 | Module IA | ✅ 26/260 | Taux 10.0 % · Azure Monitor 200 |
+| Quiz CCNA | ✅ 3 quiz | 45 questions chargées (seed-ccna.js) |
+| Admin dashboard | ✅ 9 correctifs | Boutons CRUD, activate/deactivate, export CSV |
 
 ### Couverture DevSecOps
 
@@ -381,6 +427,10 @@ QuizAppAnomalies_CL
 | Conflit de merge Git | Upstream modifié indépendamment | `git stash → pull --rebase → stash pop → résolution manuelle` |
 | Secrets dans le code source | Mauvaise pratique initiale | Migration vers variables d'environnement (`os.environ.get`) + pipeline vars secrets |
 | ACR Login expiré | Session Azure Security Defaults | `az logout && az login --tenant <tenant-id>` + `az acr login` |
+| `userController.js` absent du build | Fichier non traqué par Git | `git add quiz_app_server/controllers/userController.js` + commit |
+| Admin — `deleteQuiz` undefined | `useQuiz()` n'exporte pas de mutation delete | Remplacement par hook dédié `useDeleteQuiz()` |
+| Admin — ajout de question impossible | Route `POST /admin/quizzes/:id/questions` inexistante | Ajout de la route dans `routes/admin.js` + bypass ownership ADMIN |
+| Prometheus scrape échoue | Cible pointait vers le frontend au lieu du backend | Correction de `prometheus.yml` : target → `quizapp-backend-smaya2026.azurewebsites.net` |
 
 ---
 
@@ -390,7 +440,8 @@ QuizAppAnomalies_CL
 |-----------|-----|
 | GitHub | https://github.com/soumaya-hmaidi/projet-devSecOps- |
 | Azure DevOps | https://dev.azure.com/soumayahmaidi369/DevSecOps-QuizApp |
-| Application | https://quizapp-smaya2026.azurewebsites.net |
+| Application (frontend) | https://quizapp-smaya2026.azurewebsites.net |
+| API (backend) | https://quizapp-backend-smaya2026.azurewebsites.net |
 | Grafana | https://grafana-smaya2026.azurewebsites.net |
 | Prometheus | https://prometheus-smaya2026.azurewebsites.net |
 | Azure Portal | https://portal.azure.com (rg-quizapp-devsecops) |

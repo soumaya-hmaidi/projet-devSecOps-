@@ -29,7 +29,7 @@ import { Quiz } from '@/types/quiz';
 import { ConfirmationModal } from '@/components/shared/ConfirmationModal';
 import { useDeleteQuestion } from '@/hooks/useAdmin';
 import { useUpdateQuiz, useCreateQuiz, useAddQuestion } from '@/hooks/useQuiz';
-import { adminAPI } from '@/lib/api/admin';
+import { toast } from 'sonner';
 
 interface QuizFormProps {
   quiz?: Quiz | null;
