@@ -140,7 +140,7 @@ stages:
       inputs:
         azureSubscription: 'Azure-Connection'
         appName: $(backendAppName)
-        containers: $(acrServer)/quiz-backend:$(Build.BuildId)
+        containers: $(acrServer)/quizapp-backend:$(Build.BuildId)
 
 - stage: DAST
   displayName: 9 - DAST OWASP ZAP
