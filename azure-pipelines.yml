@@ -164,16 +164,21 @@ stages:
     pool:
       vmImage: ubuntu-latest
     steps:
-    - script: |
-        pip install numpy scikit-learn requests
-        cd ia_module
-        python3 anomaly_detector.py
+    - task: AzureCLI@2
       displayName: Run Isolation Forest
-      env:
-        AZURE_MONITOR_WORKSPACE_ID: $(azureMonitorWorkspaceId)
-        AZURE_MONITOR_WORKSPACE_KEY: $(azureMonitorWorkspaceKey)
-        # azureMonitorWorkspaceId and azureMonitorWorkspaceKey must be defined
-        # as secret pipeline variables in Azure DevOps → Pipelines → Variables
+      inputs:
+        azureSubscription: 'Azure-Connection'
+        scriptType: bash
+        scriptLocation: inlineScript
+        inlineScript: |
+          pip install numpy scikit-learn requests
+          export AZURE_MONITOR_WORKSPACE_ID="44fb9e1f-1c87-448a-8f2a-51c291c0f293"
+          export AZURE_MONITOR_WORKSPACE_KEY=$(az monitor log-analytics workspace get-shared-keys \
+            --resource-group rg-quizapp-devsecops \
+            --workspace-name law-quizapp-monitor \
+            --query primarySharedKey -o tsv)
+          cd ia_module
+          python3 anomaly_detector.py
 
 - stage: Monitor
   displayName: 11 - Monitor
