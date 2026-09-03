@@ -1,0 +1,150 @@
+{
+  "title": "QuizApp - Monitoring Dashboard",
+  "uid": "quizapp-main",
+  "tags": ["quizapp","devsecops","prometheus"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "refresh": "30s",
+  "time": {"from": "now-3h","to": "now"},
+  "panels": [
+    {"id":1,"type":"row","title":"HTTP Traffic","gridPos":{"x":0,"y":0,"w":24,"h":1},"collapsed":false,"panels":[]},
+    {
+      "id":2,"type":"timeseries","title":"Request Rate (req/s)",
+      "gridPos":{"x":0,"y":1,"w":12,"h":8},
+      "targets":[{"datasource":{"type":"prometheus","uid":"prometheus-quizapp"},"refId":"A",
+        "expr":"sum(rate(http_requests_total[2m])) by (method, route)","legendFormat":"{{method}} {{route}}"}],
+      "fieldConfig":{"defaults":{"unit":"reqps","color":{"mode":"palette-classic"},"custom":{"lineWidth":2,"fillOpacity":10}},"overrides":[]},
+      "options":{"tooltip":{"mode":"multi"},"legend":{"displayMode":"table","placement":"bottom"}}
+    },
+    {
+      "id":3,"type":"timeseries","title":"HTTP Error Rate (4xx + 5xx)",
+      "gridPos":{"x":12,"y":1,"w":12,"h":8},
+      "targets":[{"datasource":{"type":"prometheus","uid":"prometheus-quizapp"},"refId":"A",
+        "expr":"sum(rate(http_requests_total{status=~\"4..|5..\"}[2m])) by (status)","legendFormat":"HTTP {{status}}"}],
+      "fieldConfig":{"defaults":{"unit":"reqps","color":{"fixedColor":"red","mode":"fixed"},"custom":{"lineWidth":2,"fillOpacity":20}},"overrides":[]},
+      "options":{"tooltip":{"mode":"multi"},"legend":{"displayMode":"table","placement":"bottom"}}
+    },
+    {"id":4,"type":"row","title":"Latency","gridPos":{"x":0,"y":9,"w":24,"h":1},"collapsed":false,"panels":[]},
+    {
+      "id":5,"type":"timeseries","title":"Request Duration - p50 / p90 / p99",
+      "gridPos":{"x":0,"y":10,"w":16,"h":8},
+      "targets":[
+        {"datasource":{"type":"prometheus","uid":"prometheus-quizapp"},"refId":"A",
+         "expr":"histogram_quantile(0.50, sum(rate(http_request_duration_seconds_bucket[2m])) by (le))","legendFormat":"p50"},
+        {"datasource":{"type":"prometheus","uid":"prometheus-quizapp"},"refId":"B",
+         "expr":"histogram_quantile(0.90, sum(rate(http_request_duration_seconds_bucket[2m])) by (le))","legendFormat":"p90"},
+        {"datasource":{"type":"prometheus","uid":"prometheus-quizapp"},"refId":"C",
+         "expr":"histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket[2m])) by (le))","legendFormat":"p99"}
+      ],
+      "fieldConfig":{"defaults":{"unit":"s","custom":{"lineWidth":2,"fillOpacity":5}},"overrides":[]},
+      "options":{"tooltip":{"mode":"multi"},"legend":{"displayMode":"list","placement":"bottom"}}
+    },
+    {
+      "id":6,"type":"stat","title":"Avg Request Duration",
+      "gridPos":{"x":16,"y":10,"w":8,"h":8},
+      "targets":[{"datasource":{"type":"prometheus","uid":"prometheus-quizapp"},"refId":"A",
+        "expr":"sum(rate(http_request_duration_seconds_sum[5m])) / sum(rate(http_request_duration_seconds_count[5m]))","legendFormat":"Avg"}],
+      "fieldConfig":{"defaults":{"unit":"s","thresholds":{"mode":"absolute","steps":[{"color":"green","value":null},{"color":"yellow","value":0.5},{"color":"red","value":2}]}},"overrides":[]},
+      "options":{"reduceOptions":{"calcs":["lastNotNull"]},"colorMode":"background","graphMode":"area"}
+    },
+    {"id":7,"type":"row","title":"Memory and CPU","gridPos":{"x":0,"y":18,"w":24,"h":1},"collapsed":false,"panels":[]},
+    {
+      "id":8,"type":"timeseries","title":"Node.js Heap Memory",
+      "gridPos":{"x":0,"y":19,"w":12,"h":8},
+      "targets":[
+        {"datasource":{"type":"prometheus","uid":"prometheus-quizapp"},"refId":"A","expr":"nodejs_heap_size_used_bytes","legendFormat":"Heap Used"},
+        {"datasource":{"type":"prometheus","uid":"prometheus-quizapp"},"refId":"B","expr":"nodejs_heap_size_total_bytes","legendFormat":"Heap Total"},
+        {"datasource":{"type":"prometheus","uid":"prometheus-quizapp"},"refId":"C","expr":"process_resident_memory_bytes","legendFormat":"RSS"}
+      ],
+      "fieldConfig":{"defaults":{"unit":"bytes","custom":{"lineWidth":2,"fillOpacity":10}},"overrides":[]},
+      "options":{"tooltip":{"mode":"multi"},"legend":{"displayMode":"list","placement":"bottom"}}
+    },
+    {
+      "id":9,"type":"timeseries","title":"CPU Usage %",
+      "gridPos":{"x":12,"y":19,"w":12,"h":8},
+      "targets":[{"datasource":{"type":"prometheus","uid":"prometheus-quizapp"},"refId":"A",
+        "expr":"rate(process_cpu_seconds_total[1m]) * 100","legendFormat":"CPU %"}],
+      "fieldConfig":{"defaults":{"unit":"percent","min":0,"max":100,"color":{"fixedColor":"orange","mode":"fixed"},"custom":{"lineWidth":2,"fillOpacity":15}},"overrides":[]},
+      "options":{"tooltip":{"mode":"multi"}}
+    },
+    {"id":10,"type":"row","title":"Node.js Runtime","gridPos":{"x":0,"y":27,"w":24,"h":1},"collapsed":false,"panels":[]},
+    {
+      "id":11,"type":"timeseries","title":"Event Loop Lag",
+      "gridPos":{"x":0,"y":28,"w":8,"h":7},
+      "targets":[{"datasource":{"type":"prometheus","uid":"prometheus-quizapp"},"refId":"A",
+        "expr":"nodejs_eventloop_lag_seconds","legendFormat":"Lag"}],
+      "fieldConfig":{"defaults":{"unit":"s","thresholds":{"mode":"absolute","steps":[{"color":"green","value":null},{"color":"yellow","value":0.1},{"color":"red","value":0.5}]},"custom":{"lineWidth":2,"fillOpacity":10}},"overrides":[]},
+      "options":{"tooltip":{"mode":"multi"}}
+    },
+    {
+      "id":12,"type":"timeseries","title":"Active Handles and Requests",
+      "gridPos":{"x":8,"y":28,"w":8,"h":7},
+      "targets":[
+        {"datasource":{"type":"prometheus","uid":"prometheus-quizapp"},"refId":"A","expr":"nodejs_active_handles_total","legendFormat":"Handles"},
+        {"datasource":{"type":"prometheus","uid":"prometheus-quizapp"},"refId":"B","expr":"nodejs_active_requests_total","legendFormat":"Requests"}
+      ],
+      "fieldConfig":{"defaults":{"unit":"short","custom":{"lineWidth":2,"fillOpacity":5}},"overrides":[]},
+      "options":{"tooltip":{"mode":"multi"}}
+    },
+    {
+      "id":13,"type":"timeseries","title":"File Descriptors",
+      "gridPos":{"x":16,"y":28,"w":8,"h":7},
+      "targets":[
+        {"datasource":{"type":"prometheus","uid":"prometheus-quizapp"},"refId":"A","expr":"process_open_fds","legendFormat":"Open FDs"},
+        {"datasource":{"type":"prometheus","uid":"prometheus-quizapp"},"refId":"B","expr":"process_max_fds","legendFormat":"Max FDs"}
+      ],
+      "fieldConfig":{"defaults":{"unit":"short","custom":{"lineWidth":2,"fillOpacity":5}},"overrides":[]},
+      "options":{"tooltip":{"mode":"multi"}}
+    },
+    {"id":14,"type":"row","title":"Traffic Breakdown","gridPos":{"x":0,"y":35,"w":24,"h":1},"collapsed":false,"panels":[]},
+    {
+      "id":15,"type":"bargauge","title":"Requests by HTTP Status Code",
+      "gridPos":{"x":0,"y":36,"w":12,"h":8},
+      "targets":[{"datasource":{"type":"prometheus","uid":"prometheus-quizapp"},"refId":"A",
+        "expr":"sum(increase(http_requests_total[1h])) by (status)","legendFormat":"HTTP {{status}}"}],
+      "fieldConfig":{"defaults":{"unit":"short","thresholds":{"mode":"absolute","steps":[{"color":"green","value":null},{"color":"yellow","value":100},{"color":"red","value":500}]}},"overrides":[]},
+      "options":{"reduceOptions":{"calcs":["lastNotNull"]},"orientation":"horizontal","displayMode":"gradient","showUnfilled":true}
+    },
+    {
+      "id":16,"type":"bargauge","title":"Top Routes by Request Volume (1h)",
+      "gridPos":{"x":12,"y":36,"w":12,"h":8},
+      "targets":[{"datasource":{"type":"prometheus","uid":"prometheus-quizapp"},"refId":"A",
+        "expr":"topk(10, sum(increase(http_requests_total[1h])) by (route))","legendFormat":"{{route}}"}],
+      "fieldConfig":{"defaults":{"unit":"short","color":{"mode":"palette-classic"}},"overrides":[]},
+      "options":{"reduceOptions":{"calcs":["lastNotNull"]},"orientation":"horizontal","displayMode":"gradient"}
+    },
+    {"id":17,"type":"row","title":"Quick Stats","gridPos":{"x":0,"y":44,"w":24,"h":1},"collapsed":false,"panels":[]},
+    {
+      "id":18,"type":"stat","title":"Total Requests (1h)",
+      "gridPos":{"x":0,"y":45,"w":6,"h":5},
+      "targets":[{"datasource":{"type":"prometheus","uid":"prometheus-quizapp"},"refId":"A",
+        "expr":"sum(increase(http_requests_total[1h]))","legendFormat":"Total"}],
+      "fieldConfig":{"defaults":{"unit":"short","color":{"fixedColor":"blue","mode":"fixed"}},"overrides":[]},
+      "options":{"reduceOptions":{"calcs":["lastNotNull"]},"colorMode":"background","graphMode":"none"}
+    },
+    {
+      "id":19,"type":"stat","title":"Error Rate %",
+      "gridPos":{"x":6,"y":45,"w":6,"h":5},
+      "targets":[{"datasource":{"type":"prometheus","uid":"prometheus-quizapp"},"refId":"A",
+        "expr":"sum(rate(http_requests_total{status=~\"5..\"}[5m])) / sum(rate(http_requests_total[5m])) * 100","legendFormat":"Error %"}],
+      "fieldConfig":{"defaults":{"unit":"percent","thresholds":{"mode":"absolute","steps":[{"color":"green","value":null},{"color":"yellow","value":1},{"color":"red","value":5}]}},"overrides":[]},
+      "options":{"reduceOptions":{"calcs":["lastNotNull"]},"colorMode":"background","graphMode":"none"}
+    },
+    {
+      "id":20,"type":"stat","title":"Heap Used",
+      "gridPos":{"x":12,"y":45,"w":6,"h":5},
+      "targets":[{"datasource":{"type":"prometheus","uid":"prometheus-quizapp"},"refId":"A",
+        "expr":"nodejs_heap_size_used_bytes","legendFormat":"Heap"}],
+      "fieldConfig":{"defaults":{"unit":"bytes","thresholds":{"mode":"absolute","steps":[{"color":"green","value":null},{"color":"yellow","value":104857600},{"color":"red","value":209715200}]}},"overrides":[]},
+      "options":{"reduceOptions":{"calcs":["lastNotNull"]},"colorMode":"background","graphMode":"none"}
+    },
+    {
+      "id":21,"type":"stat","title":"Process Uptime",
+      "gridPos":{"x":18,"y":45,"w":6,"h":5},
+      "targets":[{"datasource":{"type":"prometheus","uid":"prometheus-quizapp"},"refId":"A",
+        "expr":"time() - process_start_time_seconds","legendFormat":"Uptime"}],
+      "fieldConfig":{"defaults":{"unit":"s","color":{"fixedColor":"green","mode":"fixed"}},"overrides":[]},
+      "options":{"reduceOptions":{"calcs":["lastNotNull"]},"colorMode":"background","graphMode":"none"}
+    }
+  ]
+}

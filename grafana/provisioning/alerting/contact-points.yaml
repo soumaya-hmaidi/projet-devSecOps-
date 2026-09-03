@@ -1,0 +1,11 @@
+apiVersion: 1
+contactPoints:
+  - orgId: 1
+    name: QuizApp Email
+    receivers:
+      - uid: quizapp-email-receiver
+        type: email
+        settings:
+          addresses: soumaya.hmaidi@esprit.tn
+          singleEmail: false
+        disableResolveMessage: false

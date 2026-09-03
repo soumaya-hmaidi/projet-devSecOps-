@@ -1,0 +1,11 @@
+apiVersion: 1
+datasources:
+  - name: Prometheus
+    type: prometheus
+    uid: prometheus-quizapp
+    url: https://prometheus-smaya2026.azurewebsites.net
+    access: proxy
+    isDefault: true
+    jsonData:
+      httpMethod: POST
+      timeInterval: 15s
