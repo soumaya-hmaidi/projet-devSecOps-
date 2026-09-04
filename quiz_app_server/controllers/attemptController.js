@@ -26,12 +26,10 @@ const startAttempt = asyncHandler(async (req, res) => {
   }
 
   // Check if user already attempted this quiz
-  const existingAttempt = await prisma.quizAttempt.findUnique({
+  const existingAttempt = await prisma.quizAttempt.findFirst({
     where: {
-      quizId_userId: {
-        quizId: quizIdInt,
-        userId: req.user.id
-      }
+      quizId: quizIdInt,
+      userId: req.user.id
     }
   });
 
