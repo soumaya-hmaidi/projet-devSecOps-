@@ -171,10 +171,9 @@ const deleteQuestion = asyncHandler(async (req, res) => {
     throw new AuthorizationError('Unauthorized to delete this question');
   }
 
-  // Delete question (options will be deleted automatically due to cascade)
-  await prisma.question.delete({
-    where: { id: questionId }
-  });
+  // Delete options first (no DB cascade on Option.questionId)
+  await prisma.option.deleteMany({ where: { questionId } });
+  await prisma.question.delete({ where: { id: questionId } });
 
   res.json({
     success: true,

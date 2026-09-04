@@ -194,6 +194,39 @@ const getAllQuizzesForAdmin = asyncHandler(async (req, res) => {
   });
 });
 
+// Get questions for a quiz (admin)
+const getQuizQuestions = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const quizId = parseInt(id, 10);
+
+  const quiz = await prisma.quiz.findUnique({
+    where: { id: quizId },
+    include: {
+      questions: {
+        include: { options: { orderBy: { order: 'asc' } } },
+        orderBy: { order: 'asc' }
+      }
+    }
+  });
+
+  if (!quiz) throw new NotFoundError('Quiz not found');
+
+  res.json({ success: true, message: 'Questions retrieved successfully', data: quiz.questions });
+});
+
+// Get all attempts (admin)
+const getAllAttemptsAdmin = asyncHandler(async (req, res) => {
+  const attempts = await prisma.quizAttempt.findMany({
+    include: {
+      quiz: { select: { id: true, title: true } },
+      user: { select: { id: true, name: true, email: true } }
+    },
+    orderBy: { startedAt: 'desc' }
+  });
+
+  res.json({ success: true, message: 'Attempts retrieved successfully', data: attempts });
+});
+
 module.exports = {
   getAllQuizzes,
   getQuizById,
@@ -202,5 +235,7 @@ module.exports = {
   deleteQuiz,
   publishQuiz,
   unpublishQuiz,
-  getAllQuizzesForAdmin
+  getAllQuizzesForAdmin,
+  getQuizQuestions,
+  getAllAttemptsAdmin
 };

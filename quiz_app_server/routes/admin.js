@@ -7,7 +7,9 @@ const {
   updateQuiz,
   deleteQuiz,
   publishQuiz,
-  unpublishQuiz
+  unpublishQuiz,
+  getQuizQuestions,
+  getAllAttemptsAdmin
 } = require('../controllers/quizController');
 const { createQuestion } = require('../controllers/questionController');
 const {
@@ -37,10 +39,14 @@ router.put('/quizzes/:id', updateQuiz);
 router.post('/quizzes/:id/publish', publishQuiz);
 router.post('/quizzes/:id/unpublish', unpublishQuiz);
 router.delete('/quizzes/:id', deleteQuiz);
+router.get('/quizzes/:id/questions', getQuizQuestions);
 router.post('/quizzes/:id/questions', (req, res, next) => {
   req.body.quizId = parseInt(req.params.id);
   next();
 }, createQuestion);
+
+// Attempts (admin view)
+router.get('/attempts', getAllAttemptsAdmin);
 
 // User Management Routes
 router.get('/users', getAllUsers);
