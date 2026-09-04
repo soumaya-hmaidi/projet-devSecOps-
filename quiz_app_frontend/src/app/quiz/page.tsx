@@ -34,7 +34,7 @@ export default function QuizPage() {
   };
 
   const handleViewQuiz = (quizId: number) => {
-    router.push(`/quiz/${quizId}/preview`);
+    router.push(`/quiz/${quizId}`);
   };
 
   // Get completion status for quizzes

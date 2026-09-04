@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useAttempt } from '@/hooks/useAttempt';
@@ -8,11 +8,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { 
-  Trophy, 
-  CheckCircle, 
-  XCircle, 
-  Clock, 
+import {
+  Trophy,
+  CheckCircle,
+  XCircle,
+  Clock,
   BookOpen,
   ArrowLeft,
   RotateCcw,
@@ -25,41 +25,42 @@ export default function QuizResultsPage() {
   const params = useParams();
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
-  const { getAttempt } = useAttempt();
+  const { attempts, isLoading: attemptsLoading, getAttempt } = useAttempt();
   const [attempt, setAttempt] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const loadedRef = useRef(false);
 
-  const attemptId = parseInt(params.id as string);
+  // params.id is the QUIZ id (URL: /quiz/[quizId]/results)
+  const quizId = parseInt(params.id as string);
 
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/login');
       return;
     }
-
     if (user && user.role === 'ADMIN') {
       router.push('/admin/quizzes');
       return;
     }
-
-    if (user && attemptId) {
-      loadAttempt();
+    if (user && !attemptsLoading && !loadedRef.current) {
+      // Find the completed attempt for this quiz
+      const quizAttempt = attempts?.find((a: any) => a.quizId === quizId && a.completed);
+      if (quizAttempt) {
+        loadedRef.current = true;
+        setIsLoading(true);
+        getAttempt(quizAttempt.id)
+          .then((data: any) => setAttempt(data))
+          .catch(() => {
+            toast.error('Failed to load quiz results');
+            router.push('/student/dashboard');
+          })
+          .finally(() => setIsLoading(false));
+      } else if (!attemptsLoading) {
+        // No completed attempt found — send back to quiz start
+        setIsLoading(false);
+      }
     }
-  }, [user, authLoading, router, attemptId]);
-
-  const loadAttempt = async () => {
-    try {
-      setIsLoading(true);
-      const attemptData = await getAttempt(attemptId);
-      setAttempt(attemptData);
-    } catch (error) {
-      toast.error('Failed to load quiz results');
-      console.error('Error loading attempt:', error);
-      router.push('/student/dashboard');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  }, [user, authLoading, attemptsLoading, attempts, quizId]);
 
   const getScoreColor = (score: number) => {
     if (score >= 80) return 'text-green-600';
@@ -67,13 +68,13 @@ export default function QuizResultsPage() {
     return 'text-red-600';
   };
 
-  const getScoreBadgeVariant = (score: number) => {
+  const getScoreBadgeVariant = (score: number): 'default' | 'secondary' | 'destructive' => {
     if (score >= 80) return 'default';
     if (score >= 60) return 'secondary';
     return 'destructive';
   };
 
-  if (authLoading || isLoading) {
+  if (authLoading || isLoading || attemptsLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-yellow-50 flex items-center justify-center">
         <div className="text-center">
@@ -84,9 +85,7 @@ export default function QuizResultsPage() {
     );
   }
 
-  if (!user) {
-    return null;
-  }
+  if (!user) return null;
 
   if (!attempt) {
     return (
@@ -94,13 +93,13 @@ export default function QuizResultsPage() {
         <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-0 max-w-md">
           <CardContent className="flex flex-col items-center justify-center py-12">
             <BookOpen className="h-16 w-16 text-muted-foreground mb-4" />
-            <h3 className="text-xl font-semibold text-gradient mb-2">Results Not Found</h3>
+            <h3 className="text-xl font-semibold text-gradient mb-2">No Results Found</h3>
             <p className="text-muted-foreground text-center mb-6">
-              The quiz results you're looking for don't exist or are no longer available.
+              You haven&apos;t completed this quiz yet.
             </p>
-            <Button onClick={() => router.push('/student/dashboard')}>
-              <Home className="h-4 w-4 mr-2" />
-              Back to Dashboard
+            <Button onClick={() => router.push(`/quiz/${quizId}`)}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Start Quiz
             </Button>
           </CardContent>
         </Card>
@@ -125,7 +124,7 @@ export default function QuizResultsPage() {
             </div>
             <h1 className="text-4xl font-bold text-gradient mb-2">Quiz Complete!</h1>
             <p className="text-muted-foreground text-lg">
-              Here are your results for "{attempt.quiz?.title}"
+              Here are your results for &quot;{attempt.quiz?.title}&quot;
             </p>
           </div>
 
@@ -139,20 +138,20 @@ export default function QuizResultsPage() {
                 <div className={`text-6xl font-bold mb-2 ${getScoreColor(score)}`}>
                   {score}%
                 </div>
-                <Badge 
+                <Badge
                   variant={getScoreBadgeVariant(score)}
                   className="text-lg px-4 py-2"
                 >
                   {score >= 80 ? 'Excellent!' : score >= 60 ? 'Good Job!' : 'Keep Practicing!'}
                 </Badge>
               </div>
-              
+
               <div className="space-y-4">
                 <div className="flex justify-between text-sm">
                   <span>Correct Answers</span>
                   <span className="font-medium">{correctAnswers} / {totalQuestions}</span>
                 </div>
-                <Progress value={(correctAnswers / totalQuestions) * 100} className="h-3" />
+                <Progress value={totalQuestions > 0 ? (correctAnswers / totalQuestions) * 100 : 0} className="h-3" />
               </div>
 
               <div className="grid grid-cols-2 gap-4 text-center">
@@ -218,13 +217,13 @@ export default function QuizResultsPage() {
                   {attempt.quiz.questions.map((question: any, index: number) => {
                     const userAnswer = attempt.answers?.find((a: any) => a.questionId === question.id);
                     const isCorrect = userAnswer?.isCorrect || false;
-                    
+
                     return (
                       <div
                         key={question.id}
                         className={`p-4 rounded-lg border ${
-                          isCorrect 
-                            ? 'bg-green-50 border-green-200' 
+                          isCorrect
+                            ? 'bg-green-50 border-green-200'
                             : 'bg-red-50 border-red-200'
                         }`}
                       >
@@ -263,27 +262,27 @@ export default function QuizResultsPage() {
                               )}
                               {question.type === 'TRUE_FALSE' && (
                                 <div className="space-y-1">
-                                  <div className={`p-2 rounded text-sm ${
-                                    question.options?.find((o: any) => o.isCorrect)?.text === 'True'
-                                      ? 'bg-green-100 text-green-800'
-                                      : 'bg-gray-100 text-gray-600'
-                                  }`}>
-                                    True {question.options?.find((o: any) => o.isCorrect)?.text === 'True' && '✓'}
-                                  </div>
-                                  <div className={`p-2 rounded text-sm ${
-                                    question.options?.find((o: any) => o.isCorrect)?.text === 'False'
-                                      ? 'bg-green-100 text-green-800'
-                                      : 'bg-gray-100 text-gray-600'
-                                  }`}>
-                                    False {question.options?.find((o: any) => o.isCorrect)?.text === 'False' && '✓'}
-                                  </div>
+                                  {question.options?.map((option: any) => (
+                                    <div
+                                      key={option.id}
+                                      className={`p-2 rounded text-sm ${
+                                        option.isCorrect
+                                          ? 'bg-green-100 text-green-800'
+                                          : userAnswer?.optionId === option.id
+                                          ? 'bg-red-100 text-red-800'
+                                          : 'bg-gray-100 text-gray-600'
+                                      }`}
+                                    >
+                                      {option.text}
+                                      {option.isCorrect && ' ✓'}
+                                      {userAnswer?.optionId === option.id && !option.isCorrect && ' ✗'}
+                                    </div>
+                                  ))}
                                 </div>
                               )}
                               {question.type === 'TEXT' && (
-                                <div className="space-y-1">
-                                  <div className="p-2 bg-gray-100 rounded text-sm">
-                                    Your answer: {userAnswer?.textAnswer || 'No answer provided'}
-                                  </div>
+                                <div className="p-2 bg-gray-100 rounded text-sm">
+                                  Your answer: {userAnswer?.textAnswer || 'No answer provided'}
                                 </div>
                               )}
                             </div>
