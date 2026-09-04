@@ -179,9 +179,16 @@ const submitAttempt = asyncHandler(async (req, res) => {
     let textAnswer = null;
 
     if (question.type === 'MULTIPLE_CHOICE' || question.type === 'TRUE_FALSE') {
-      optionId = parseInt(answerValue, 10);
+      // TRUE_FALSE answers may arrive as "true"/"false" strings (from QuizTaking component)
+      // or as numeric option IDs (string) — handle both
+      if (question.type === 'TRUE_FALSE' && isNaN(parseInt(answerValue, 10))) {
+        const matched = question.options.find(opt => opt.text.toLowerCase() === String(answerValue).toLowerCase());
+        optionId = matched?.id || null;
+      } else {
+        optionId = parseInt(answerValue, 10) || null;
+      }
       const correctOption = question.options.find(option => option.isCorrect);
-      isCorrect = optionId === correctOption?.id;
+      isCorrect = !!(optionId && optionId === correctOption?.id);
     } else if (question.type === 'TEXT') {
       textAnswer = answerValue;
       // For text questions, we'll mark as correct for now (could implement more sophisticated checking)

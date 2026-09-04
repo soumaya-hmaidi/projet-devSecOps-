@@ -128,7 +128,19 @@ export default function QuizTakingPage() {
     if (!attemptId) return;
 
     try {
-      const result = await submitAttempt(attemptId, answers);
+      // Convert TRUE_FALSE "true"/"false" strings to numeric option IDs before submitting
+      const normalizedAnswers: Record<number, any> = {};
+      for (const [qIdStr, value] of Object.entries(answers)) {
+        const qId = parseInt(qIdStr, 10);
+        const question = quiz?.questions.find(q => q.id === qId);
+        if (question?.type === 'TRUE_FALSE' && isNaN(parseInt(value, 10))) {
+          const opt = question.options?.find(o => o.text.toLowerCase() === String(value).toLowerCase());
+          normalizedAnswers[qId] = opt ? opt.id.toString() : value;
+        } else {
+          normalizedAnswers[qId] = value;
+        }
+      }
+      const result = await submitAttempt(attemptId, normalizedAnswers);
       toast.success(`Quiz submitted successfully! Your score: ${result.score}%`);
       router.push(`/quiz/${quizId}/results`);
     } catch (error) {
