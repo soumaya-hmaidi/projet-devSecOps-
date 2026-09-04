@@ -48,96 +48,68 @@ async function main() {
     role: studentUser.role,
   });
 
-  // Create sample quiz
-  const sampleQuiz = await prisma.quiz.upsert({
-    where: { id: 1 },
-    update: {},
-    create: {
-      title: 'Math Basics Quiz',
-      description: 'Test your basic math skills with this fun quiz!',
-      isActive: true,
-      createdById: adminUser.id,
-    },
+  // Create sample quiz (only if it doesn't already exist)
+  const existingQuiz = await prisma.quiz.findFirst({
+    where: { title: 'Math Basics Quiz' }
   });
 
-  console.log('✅ Sample quiz created:', {
-    id: sampleQuiz.id,
-    title: sampleQuiz.title,
-    description: sampleQuiz.description,
-  });
-
-  // Create sample questions
-  const questions = [
-    {
-      question: 'What is 2 + 2?',
-      type: 'MULTIPLE_CHOICE',
-      points: 1,
-      order: 1,
-    },
-    {
-      question: 'What is 5 × 3?',
-      type: 'MULTIPLE_CHOICE',
-      points: 1,
-      order: 2,
-    },
-    {
-      question: 'Is 10 greater than 5?',
-      type: 'TRUE_FALSE',
-      points: 1,
-      order: 3,
-    },
-  ];
-
-  for (const questionData of questions) {
-    const question = await prisma.question.create({
+  if (existingQuiz) {
+    console.log('⏭️  Math Basics Quiz already exists, skipping questions.');
+  } else {
+    const sampleQuiz = await prisma.quiz.create({
       data: {
-        ...questionData,
-        quizId: sampleQuiz.id,
+        title: 'Math Basics Quiz',
+        description: 'Test your basic math skills with this fun quiz!',
+        isActive: true,
+        createdById: adminUser.id,
       },
     });
 
-    // Create options for multiple choice and true/false questions
-    if (questionData.type === 'MULTIPLE_CHOICE') {
-      const options = questionData.question === 'What is 2 + 2?' 
-        ? [
-            { text: '3', isCorrect: false, order: 1 },
-            { text: '4', isCorrect: true, order: 2 },
-            { text: '5', isCorrect: false, order: 3 },
-            { text: '6', isCorrect: false, order: 4 },
-          ]
-        : [
-            { text: '12', isCorrect: false, order: 1 },
-            { text: '15', isCorrect: true, order: 2 },
-            { text: '18', isCorrect: false, order: 3 },
-            { text: '20', isCorrect: false, order: 4 },
-          ];
+    console.log('✅ Sample quiz created:', {
+      id: sampleQuiz.id,
+      title: sampleQuiz.title,
+    });
 
-      for (const optionData of options) {
-        await prisma.option.create({
-          data: {
-            ...optionData,
-            questionId: question.id,
-          },
-        });
-      }
-    } else if (questionData.type === 'TRUE_FALSE') {
-      // Create True/False options
-      const options = [
-        { text: 'True', isCorrect: true, order: 1 },
-        { text: 'False', isCorrect: false, order: 2 },
-      ];
+    // Create sample questions
+    const questions = [
+      { question: 'What is 2 + 2?', type: 'MULTIPLE_CHOICE', points: 1, order: 1 },
+      { question: 'What is 5 × 3?', type: 'MULTIPLE_CHOICE', points: 1, order: 2 },
+      { question: 'Is 10 greater than 5?', type: 'TRUE_FALSE', points: 1, order: 3 },
+    ];
 
-      for (const optionData of options) {
-        await prisma.option.create({
-          data: {
-            ...optionData,
-            questionId: question.id,
-          },
-        });
+    for (const questionData of questions) {
+      const question = await prisma.question.create({
+        data: { ...questionData, quizId: sampleQuiz.id },
+      });
+
+      if (questionData.type === 'MULTIPLE_CHOICE') {
+        const options = questionData.question === 'What is 2 + 2?'
+          ? [
+              { text: '3', isCorrect: false, order: 1 },
+              { text: '4', isCorrect: true, order: 2 },
+              { text: '5', isCorrect: false, order: 3 },
+              { text: '6', isCorrect: false, order: 4 },
+            ]
+          : [
+              { text: '12', isCorrect: false, order: 1 },
+              { text: '15', isCorrect: true, order: 2 },
+              { text: '18', isCorrect: false, order: 3 },
+              { text: '20', isCorrect: false, order: 4 },
+            ];
+        for (const optionData of options) {
+          await prisma.option.create({ data: { ...optionData, questionId: question.id } });
+        }
+      } else if (questionData.type === 'TRUE_FALSE') {
+        const options = [
+          { text: 'True', isCorrect: true, order: 1 },
+          { text: 'False', isCorrect: false, order: 2 },
+        ];
+        for (const optionData of options) {
+          await prisma.option.create({ data: { ...optionData, questionId: question.id } });
+        }
       }
+      console.log('✅ Question created:', question.question);
     }
-
-    console.log('✅ Question created:', question.question);
   }
 
   console.log('🎉 Database seeding completed successfully!');

@@ -6,6 +6,7 @@ import { QuizTaking } from '@/components/quiz/QuizTaking';
 import { useQuizById } from '@/hooks/useQuiz';
 import { useAuth } from '@/hooks/useAuth';
 import { useAttempt } from '@/hooks/useAttempt';
+import { attemptAPI } from '@/lib/api/attempt';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -63,21 +64,25 @@ export default function QuizTakingPage() {
       
       // Handle 409 Conflict - user already attempted this quiz
       if (error.response?.status === 409) {
-        // Check if user has a completed attempt and redirect to results
-        const existingAttempt = attempts?.find(a => a.quizId === quizId);
-        
-        if (existingAttempt?.completed) {
-          toast.info('You have already completed this quiz. Redirecting to results...');
-          router.push(`/quiz/${quizId}/results`);
-          return;
-        } else if (existingAttempt && !existingAttempt.completed) {
-          // User has an incomplete attempt, allow them to continue
-          toast.info('Resuming your previous attempt...');
-          setAttemptId(existingAttempt.id);
-          return;
+        try {
+          // Fetch fresh attempts directly (don't rely on possibly-stale cache)
+          const freshResp = await attemptAPI.getMyAttempts();
+          const freshAttempts = freshResp.data.data as any[];
+          const existingAttempt = freshAttempts?.find(a => a.quizId === quizId);
+          if (existingAttempt?.completed) {
+            toast.info('You have already completed this quiz. Redirecting to results...');
+            router.push(`/quiz/${quizId}/results`);
+            return;
+          } else if (existingAttempt) {
+            toast.info('Resuming your previous attempt...');
+            setAttemptId(existingAttempt.id);
+            return;
+          }
+        } catch {
+          // fall through to generic error
         }
       }
-      
+
       toast.error('Failed to start quiz. Please try again.');
     } finally {
       setIsStarting(false);
