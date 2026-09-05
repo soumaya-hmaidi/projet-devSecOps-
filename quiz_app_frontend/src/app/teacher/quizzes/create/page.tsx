@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Trash2, ArrowLeft, Save, CheckCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -137,7 +136,7 @@ export default function CreateQuizPage() {
             </div>
             <div>
               <Label htmlFor="description">Description</Label>
-              <Textarea id="description" value={description} onChange={e => setDescription(e.target.value)} placeholder="Optional description" />
+              <textarea className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" id="description" value={description} onChange={e => setDescription(e.target.value)} placeholder="Optional description" />
             </div>
             <div className="flex items-center gap-2">
               <input type="checkbox" id="isActive" checked={isActive} onChange={e => setIsActive(e.target.checked)} className="w-4 h-4" />
@@ -163,7 +162,7 @@ export default function CreateQuizPage() {
             <CardContent className="space-y-4">
               <div>
                 <Label>Question Text *</Label>
-                <Textarea
+                <textarea className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   value={q.question}
                   onChange={e => updateQuestion(qIndex, 'question', e.target.value)}
                   placeholder="Enter question..."
