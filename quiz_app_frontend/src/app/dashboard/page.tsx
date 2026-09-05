@@ -18,6 +18,8 @@ export default function DashboardPage() {
       // Redirect based on user role
       if (user.role === 'ADMIN') {
         router.replace('/admin/dashboard');
+      } else if (user.role === 'TEACHER') {
+        router.replace('/teacher/dashboard');
       } else if (user.role === 'STUDENT') {
         router.replace('/student/dashboard');
       }

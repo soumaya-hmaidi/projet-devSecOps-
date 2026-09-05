@@ -77,6 +77,7 @@ app.use('/api/stats', require('./routes/stats'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/admin/questions', require('./routes/questions'));
 app.use('/api/admin/options', require('./routes/options'));
+app.use('/api/teacher', require('./routes/teacher'));
 
 // Health check
 app.get('/api/health', (req, res) => {

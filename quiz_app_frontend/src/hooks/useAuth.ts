@@ -29,8 +29,10 @@ export function useAuth() {
   const redirectAfterAuth = (userRole: string) => {
     if (userRole === 'ADMIN') {
       router.replace('/admin/dashboard');
+    } else if (userRole === 'TEACHER') {
+      router.replace('/teacher/dashboard');
     } else {
-      router.replace('/dashboard');
+      router.replace('/student/dashboard');
     }
   };
 

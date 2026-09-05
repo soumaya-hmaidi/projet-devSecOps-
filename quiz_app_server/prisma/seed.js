@@ -27,6 +27,27 @@ async function main() {
     role: adminUser.role,
   });
 
+  // Create teacher user
+  const teacherPassword = await bcrypt.hash('teacher123', 10);
+
+  const teacherUser = await prisma.user.upsert({
+    where: { email: 'teacher@quiz.com' },
+    update: {},
+    create: {
+      email: 'teacher@quiz.com',
+      password: teacherPassword,
+      name: 'Quiz Teacher',
+      role: 'TEACHER',
+    },
+  });
+
+  console.log('✅ Teacher user created:', {
+    id: teacherUser.id,
+    email: teacherUser.email,
+    name: teacherUser.name,
+    role: teacherUser.role,
+  });
+
   // Create sample student user
   const studentPassword = await bcrypt.hash('student123', 10);
   
@@ -115,6 +136,7 @@ async function main() {
   console.log('🎉 Database seeding completed successfully!');
   console.log('\n📋 Test Credentials:');
   console.log('Admin: admin@quiz.com / admin123');
+  console.log('Teacher: teacher@quiz.com / teacher123');
   console.log('Student: student@quiz.com / student123');
 }
 

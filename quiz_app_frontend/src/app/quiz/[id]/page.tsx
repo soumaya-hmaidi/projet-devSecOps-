@@ -34,6 +34,11 @@ export default function QuizTakingPage() {
       router.push('/admin/quizzes');
       return;
     }
+
+    if (user && user.role === 'TEACHER') {
+      router.push('/teacher/dashboard');
+      return;
+    }
   }, [user, authLoading, router]);
 
   // Check for existing attempts when attempts data is loaded

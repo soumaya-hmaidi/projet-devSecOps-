@@ -24,6 +24,11 @@ export default function QuizPage() {
       return;
     }
 
+    if (user && user.role === 'TEACHER') {
+      router.push('/teacher/dashboard');
+      return;
+    }
+
     if (user) {
       getQuizzes();
     }
