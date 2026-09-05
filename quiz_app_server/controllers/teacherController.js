@@ -236,6 +236,115 @@ const getTeacherResults = asyncHandler(async (req, res) => {
   res.json({ success: true, message: 'Results retrieved', data: attempts });
 });
 
+// POST /api/teacher/generate-questions - AI question generator
+const generateQuestions = asyncHandler(async (req, res) => {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    return res.status(503).json({
+      success: false,
+      message: 'AI service not configured. Set ANTHROPIC_API_KEY in environment.'
+    });
+  }
+
+  const {
+    topic,
+    count = 5,
+    types = ['MULTIPLE_CHOICE', 'TRUE_FALSE'],
+    difficulty = 'medium'
+  } = req.body;
+
+  if (!topic || !topic.trim()) {
+    return res.status(400).json({ success: false, message: 'Topic is required' });
+  }
+
+  const typeInstructions = types.map(t => {
+    if (t === 'MULTIPLE_CHOICE') return '- MULTIPLE_CHOICE: exactly 4 options, exactly 1 correct';
+    if (t === 'TRUE_FALSE') return '- TRUE_FALSE: exactly 2 options with text "True" and "False", exactly 1 correct';
+    if (t === 'TEXT') return '- TEXT: no options array (open-ended, omit options field)';
+    return '';
+  }).join('\n');
+
+  const prompt = `You are a quiz question generator. Generate exactly ${count} quiz question(s) about the topic: "${topic.trim()}".
+
+Difficulty level: ${difficulty} (easy = basic recall, medium = understanding, hard = analysis/application).
+Question types to use (distribute evenly if multiple): ${types.join(', ')}.
+
+${typeInstructions}
+
+Return ONLY a valid JSON array. No explanation, no markdown, no code block — just the raw JSON array.
+
+Example format:
+[
+  {
+    "question": "What is the default subnet mask for a Class C network?",
+    "type": "MULTIPLE_CHOICE",
+    "points": 1,
+    "options": [
+      {"text": "255.0.0.0", "isCorrect": false},
+      {"text": "255.255.0.0", "isCorrect": false},
+      {"text": "255.255.255.0", "isCorrect": true},
+      {"text": "255.255.255.255", "isCorrect": false}
+    ]
+  },
+  {
+    "question": "TCP is a connection-oriented protocol.",
+    "type": "TRUE_FALSE",
+    "points": 1,
+    "options": [
+      {"text": "True", "isCorrect": true},
+      {"text": "False", "isCorrect": false}
+    ]
+  }
+]`;
+
+  const aiResponse = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 3000,
+      messages: [{ role: 'user', content: prompt }]
+    })
+  });
+
+  if (!aiResponse.ok) {
+    const err = await aiResponse.text();
+    console.error('Anthropic API error:', err);
+    return res.status(502).json({ success: false, message: 'AI service returned an error' });
+  }
+
+  const aiData = await aiResponse.json();
+  const rawText = aiData.content?.[0]?.text || '';
+
+  let questions;
+  try {
+    // Strip any accidental markdown fences
+    const cleaned = rawText.replace(/```json|```/g, '').trim();
+    questions = JSON.parse(cleaned);
+    if (!Array.isArray(questions)) throw new Error('Not an array');
+  } catch {
+    console.error('Failed to parse AI response:', rawText);
+    return res.status(502).json({ success: false, message: 'AI returned invalid format. Try again.' });
+  }
+
+  // Sanitise: ensure required fields exist
+  const sanitised = questions.map(q => ({
+    question: String(q.question || ''),
+    type: ['MULTIPLE_CHOICE', 'TRUE_FALSE', 'TEXT'].includes(q.type) ? q.type : 'MULTIPLE_CHOICE',
+    points: parseInt(q.points, 10) || 1,
+    options: Array.isArray(q.options) ? q.options.map(o => ({
+      text: String(o.text || ''),
+      isCorrect: Boolean(o.isCorrect)
+    })) : []
+  }));
+
+  res.json({ success: true, message: 'Questions generated', data: sanitised });
+});
+
 module.exports = {
   getTeacherDashboard,
   getTeacherQuizzes,
@@ -246,5 +355,6 @@ module.exports = {
   addQuestion,
   updateQuestion,
   deleteQuestion,
-  getTeacherResults
+  getTeacherResults,
+  generateQuestions
 };

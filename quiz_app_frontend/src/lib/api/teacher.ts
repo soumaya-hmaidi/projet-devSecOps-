@@ -11,4 +11,6 @@ export const teacherAPI = {
   updateQuestion: (questionId: number, data: any) => api.put(`/teacher/questions/${questionId}`, data),
   deleteQuestion: (questionId: number) => api.delete(`/teacher/questions/${questionId}`),
   getResults: () => api.get('/teacher/results'),
+  generateQuestions: (data: { topic: string; count: number; types: string[]; difficulty: string }) =>
+    api.post('/teacher/generate-questions', data),
 };

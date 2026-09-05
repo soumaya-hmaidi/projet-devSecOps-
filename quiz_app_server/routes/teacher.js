@@ -10,7 +10,8 @@ const {
   addQuestion,
   updateQuestion,
   deleteQuestion,
-  getTeacherResults
+  getTeacherResults,
+  generateQuestions
 } = require('../controllers/teacherController');
 
 const router = express.Router();
@@ -35,5 +36,8 @@ router.delete('/questions/:id', deleteQuestion);
 
 // Student results
 router.get('/results', getTeacherResults);
+
+// AI question generation
+router.post('/generate-questions', generateQuestions);
 
 module.exports = router;

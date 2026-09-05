@@ -11,6 +11,7 @@ import { Plus, Trash2, ArrowLeft, Save, CheckCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { teacherAPI } from '@/lib/api/teacher';
 import { toast } from 'sonner';
+import { AIQuestionGenerator } from '@/components/teacher/AIQuestionGenerator';
 
 interface QuestionOption {
   text: string;
@@ -83,6 +84,10 @@ export default function CreateQuizPage() {
       });
       return { ...q, options };
     }));
+  };
+
+  const handleAIQuestions = (generated: Question[]) => {
+    setQuestions(prev => [...prev, ...generated]);
   };
 
   const handleSave = async () => {
@@ -218,6 +223,9 @@ export default function CreateQuizPage() {
             </CardContent>
           </Card>
         ))}
+
+        {/* AI Question Generator */}
+        <AIQuestionGenerator onQuestionsGenerated={handleAIQuestions} />
 
         {/* Add Question Buttons */}
         <Card>
