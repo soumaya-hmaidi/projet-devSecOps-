@@ -37,6 +37,9 @@ console.log('PORT:', process.env.PORT ? '✅ Set' : '❌ Missing');
 
 const app = express();
 
+// Trust Azure App Service's reverse proxy so express-rate-limit reads real client IPs
+app.set('trust proxy', 1);
+
 // Middleware
 const allowedOrigins = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(',')
